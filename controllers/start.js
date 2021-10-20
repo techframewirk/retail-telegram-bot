@@ -42,9 +42,10 @@ const webhookController = async (req, res, next) => {
         if(data.message != undefined) {
             if (typeof (data.message.entities) != 'undefined') {
                 if (data.message.entities[0].type == 'bot_command') {
+                    redis.del(data.message.from.id)
                     switch (data.message.text) {
                         case '/bookcabs':
-                            redis.HMSET(data.message.from.id, arrayConvert({
+                            redis.set(data.message.from.id, JSON.stringify({
                                 chat_id: data.message.chat.id,
                                 initiatedCommand: '/bookcabs',
                                 nextStep: 'pickupLocation'
@@ -72,9 +73,25 @@ const webhookController = async (req, res, next) => {
                             })
                     }
                 }
+            } else {
+                redis.get(data.message.from.id, (err, reply) => {
+                    if (err) {
+                        throw err
+                    } else {
+                        const cachedData = JSON.parse(reply)
+                        if(cachedData != null) {
+                            console.log("Cached")
+                        } else {
+                            replySender({
+                                "chat_id": data.message.chat.id,
+                                text: "I didn't understand that. Please try again!"
+                            })
+                        }
+                    }
+                })
             }
         } else {
-            console.log(data)
+            console.log("S")
         }
         res.status(200).json({
             "status": "ok"
