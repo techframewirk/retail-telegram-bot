@@ -1,0 +1,4 @@
+node_modules
+redis
+data
+.env

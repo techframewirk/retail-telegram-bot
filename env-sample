@@ -1,0 +1,4 @@
+mongoURL=mongodb://tvast:password@0.0.0.0:27017?retryWrites=true&writeConcern=majority
+mongoDBName=telegram
+redisHost=0.0.0.0
+redisPort=6379
