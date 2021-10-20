@@ -5,12 +5,20 @@ const app = express()
 
 // Util Imports
 const db = require('./utils/mongo')
-const redis = require('./utils/redis')
+
+// Controller Imports
+const startController = require('./controllers/start')
+
+// Router Imports
+const mainRoutes = require('./routers/routes')
 
 // Middlewares
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-db.connectToMongoDB(() => {
+app.use(mainRoutes)
+
+db.connectToMongoDB( async () => {
+    await startController.setWebhook()
     app.listen(3000)
 })
