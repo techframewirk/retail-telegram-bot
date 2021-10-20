@@ -1,5 +1,7 @@
 const axios = require('axios').default
 const commands = require('../commands.json')
+const redis = require('../utils/redis')
+const arrayConvert = require('../utils/arrayConvert')
 
 const setWebhook = async () => {
     try{
@@ -42,22 +44,18 @@ const webhookController = async (req, res, next) => {
                 if (data.message.entities[0].type == 'bot_command') {
                     switch (data.message.text) {
                         case '/bookcabs':
-                            replySender({
-                                "chat_id": data.message.chat.id,
-                                "text": "Select an option",
-                                "reply_markup": {
-                                    "inline_keyboard": [
-                                        [{
-                                            "text": "Buy Sandeep a MacBook Pro",
-                                            "callback_data": "share"
-                                        }],
-                                        [{
-                                            "text": "Buy Sandeep a Windows Computer",
-                                            "callback_data": "share1"
-                                        }]
-                                    ],
-                                    "resize_keyboard": true,
-                                    "one_time_keyboard": true
+                            redis.HMSET(data.message.from.id, arrayConvert({
+                                chat_id: data.message.chat.id,
+                                initiatedCommand: '/bookcabs',
+                                nextStep: 'pickupLocation'
+                            }), (err, reply) => {
+                                if(err) {
+                                    throw err
+                                } else {
+                                    replySender({
+                                        chat_id: data.message.chat.id,
+                                        text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
+                                    })
                                 }
                             })
                             break
