@@ -2,6 +2,7 @@ const axios = require('axios').default
 const commands = require('../commands.json')
 const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
+const bookCabs = require('./bookCabs')
 
 const setWebhook = async () => {
     try{
@@ -74,13 +75,17 @@ const webhookController = async (req, res, next) => {
                     }
                 }
             } else {
-                redis.get(data.message.from.id, (err, reply) => {
+                redis.get(data.message.from.id, async (err, reply) => {
                     if (err) {
                         throw err
                     } else {
                         const cachedData = JSON.parse(reply)
                         if(cachedData != null) {
-                            console.log("Cached")
+                            switch (cachedData.initiatedCommand) {
+                                case '/bookcabs':
+                                    await bookCabs(cachedData, data)
+                                    break
+                            }
                         } else {
                             replySender({
                                 "chat_id": data.message.chat.id,
