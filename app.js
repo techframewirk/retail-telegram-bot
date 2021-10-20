@@ -20,5 +20,6 @@ app.use(mainRoutes)
 
 db.connectToMongoDB( async () => {
     await startController.setWebhook()
+    await startController.setCommands()
     app.listen(3000)
 })
