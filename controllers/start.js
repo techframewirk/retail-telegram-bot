@@ -83,7 +83,7 @@ const webhookController = async (req, res, next) => {
                         if(cachedData != null) {
                             switch (cachedData.initiatedCommand) {
                                 case '/bookcabs':
-                                    await bookCabs(cachedData, data)
+                                    await bookCabs.handleBooking(cachedData, data)
                                     break
                             }
                         } else {
@@ -94,6 +94,15 @@ const webhookController = async (req, res, next) => {
                         }
                     }
                 })
+            }
+        } else if (data.callback_query != undefined) {
+            const type = data.callback_query.data.split('-')[0]
+            const callbackData = data.callback_query.data.split('-')[1]
+            switch(type) {
+                case 'bookCab':
+                    console.log("Booking Confirmation Triggered")
+                    bookCabs.confirmBooking(data, callbackData)
+                    break
             }
         } else {
             console.log("S")

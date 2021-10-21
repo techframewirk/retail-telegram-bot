@@ -88,6 +88,57 @@ const handleBooking = async (cachedData, data) => {
     }
 }
 
+const confirmBooking = async (data, callbackData) => {
+    const chat_id = data.callback_query.from.id
+    const savedData = await db.getDB().collection('ongoing').findOne({
+        chat_id: chat_id
+    }, { sort: { $natural: -1 } })
+    const response = await axios.post(
+        `${process.env.becknService}/trigger/confirm`,
+        {
+            "context": {
+                "bpp_id": "https://mock_bpp.com/",
+                "bpp_uri": "https://beckn.free.beeceptor.com",
+                "transaction_id": savedData.transaction_id
+            },
+            "message": {
+                "order": {
+                    "items": [
+                        {
+                            "id": callbackData
+                        }
+                    ],
+                    "cancellation_reasons": [],
+                    "updated_at": new Date().toISOString(),
+                    "created_at": new Date().toISOString(),
+                    "id": callbackData
+                }
+            }
+        }
+    )
+    if(response.status === 200) {
+        await db.getDB().collection('ongoing').updateOne({
+            _id: savedData._id
+        }, { $set: {
+            confirmationResponse: response.data
+        } })
+        replySender({
+            chat_id: chat_id,
+            text: "Your cab is being confirmed!\n\nIn the meantime, please send your Contact Details!",
+            reply_markup: {
+                keyboard: [
+                    [{
+                        "text": "Send Contact",
+                        "request_contact": true
+                    }]
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: true
+            }
+        })
+    }
+}
+
 const replySender = async (data) => {
     const response = await axios.post(
         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
@@ -95,4 +146,7 @@ const replySender = async (data) => {
     )
 }
 
-module.exports = handleBooking
+module.exports = {
+    handleBooking,
+    confirmBooking
+}
