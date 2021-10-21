@@ -71,6 +71,13 @@ const handleBooking = async (cachedData, data) => {
                     }
                 )
                 if(response.status === 200) {
+                    await db.getDB().collection('ongoing').updateOne({
+                        chat_id: data.message.chat.id
+                    }, {$set: {
+                        onSearchTrigger: response.data,
+                        transaction_id: response.data.context.transaction_id,
+                        message_id: response.data.context.message_id
+                    }})
                     replySender({
                         chat_id: data.message.chat.id,
                         text: "Thank you so much!\n That’s all I need. I’m looking for cabs close to your pickup location. Please wait a few mins for me to send you a reply."

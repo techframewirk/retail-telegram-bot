@@ -1,9 +1,55 @@
-const callBackController = (req, res, next) => {
+const db = require('../utils/mongo')
+const axios = require('axios').default
+
+const callBackController = async (req, res, next) => {
     try{
-        console.log(req.body)
+        const data = req.body
+        switch(data.context.action) {
+            case 'on_search':
+            const savedData = await db.getDB().collection('ongoing').findOne({
+                message_id: data.context.message_id
+            })
+            await db.getDB().collection('ongoing').updateOne({
+                _id: savedData._id
+            }, { $set: {
+                onSearchTriggerResult: data
+            }})
+            let cabs = []
+            data.message.catalog.items.forEach(cabData => {
+                cabs.push({
+                    chat_id: savedData.chat_id,
+                    text: `Name => ${cabData.descriptor.code}\nPrice => Rs.${cabData.price.value.integral}`,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{
+                                text: "Book",
+                                callback_data: `bookCab-${cabData.id}`
+                            }]
+                        ],
+                        "resize_keyboard": true,
+                        "one_time_keyboard": true
+                    }
+                })
+            })
+            await cabs.forEach(async cab => {
+                await replySender(cab)
+            })
+            break
+        }
+        res.status(200).json({
+            'status': 'ok'
+        })
     } catch (err) {
+        console.log(err)
         next(err)
     }
+}
+
+const replySender = async (data) => {
+    const response = await axios.post(
+        `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
+        data
+    )
 }
 
 module.exports = callBackController
