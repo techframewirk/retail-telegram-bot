@@ -3,6 +3,6 @@ mongoDBName=telegram
 redisHost=0.0.0.0
 redisPort=6379
 telegramToken=2030579238:AAFZ_VboZ463q-3ncnZ4lfQbpAJ9vUtfl0c
-telegramWebhook=https://b700-49-37-175-80.ngrok.io/telegram/webhook
+telegramWebhook=https://e385-49-37-175-80.ngrok.io/telegram/webhook
 telegramURL=https://api.telegram.org
 becknService=http://localhost:8002

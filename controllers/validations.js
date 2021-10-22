@@ -1,7 +1,9 @@
 const start = require('./start')
 
 const validateLocationData = async (data) => {
-    if (data.message.location != undefined) {
+    const tempData = data.message.location
+    console.log(typeof (tempData))
+    if (tempData !== undefined) {
         return true
     } else {
         // const message = {

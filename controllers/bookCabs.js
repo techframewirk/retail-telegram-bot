@@ -6,16 +6,21 @@ const db = require('../utils/mongo')
 const handleBooking = async (cachedData, data) => {
     switch(cachedData.nextStep) {
         case 'pickupLocation':
-            if(validations.validateLocationData(data)) {
+            if (data.message.location !== undefined) {
                 redis.set(data.message.chat.id, JSON.stringify({ ...cachedData, nextStep: 'dropLocation', pickupLocation: `${data.message.location.latitude},${data.message.location.longitude}` }))
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Thanks for that! Similarly, please send me the drop location."
                 })
+            } else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "That does not seem like a location! Please try again!"
+                })
             }
             break
         case 'dropLocation':
-            if(validations.validateLocationData(data)) {
+            if (data.message.location !== undefined) {
                 redis.set(data.message.chat.id, JSON.stringify({ ...cachedData, nextStep: 'cabsSearch', dropLocation: `${data.message.location.latitude},${data.message.location.longitude}` }))
                 const response = await axios.post(
                     `${process.env.becknService}/trigger/search`,
@@ -84,10 +89,15 @@ const handleBooking = async (cachedData, data) => {
                         text: "Thank you so much!\n That’s all I need. I’m looking for cabs close to your pickup location. Please wait a few mins for me to send you a reply."
                     })
                 }
+            } else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "That does not seem like a location! Please try again!"
+                })
             }
             break
         case 'requestContact':
-            if(data.message.contact != undefined) {
+            if(data.message.contact !== undefined) {
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     chat_id: data.message.chat.id
                 }, { sort: { $natural: -1 } })
@@ -99,6 +109,21 @@ const handleBooking = async (cachedData, data) => {
                 replySender({
                     chat_id: data.message.from.id,
                     text: "Thanks for that!\nYou will be updated once the Driver is allocated!"
+                })
+            } else {
+                replySender({
+                    chat_id: data.message.from.id,
+                    text: "That doesn't seem like a contact!\n\nLet's try again!\n\nPlease send your Contact details!",
+                    reply_markup: {
+                        keyboard: [
+                            [{
+                                "text": "Send Contact",
+                                "request_contact": true
+                            }]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
                 })
             }
             break
