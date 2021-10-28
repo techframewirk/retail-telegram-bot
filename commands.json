@@ -10,5 +10,9 @@
     {
         "command": "aboutus",
         "description": "To know more about StayHalo"
+    },
+    {
+        "command": "cancelbooking",
+        "description": "To Cancel active bookings."
     }
 ]

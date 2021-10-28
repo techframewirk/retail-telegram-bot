@@ -18,6 +18,12 @@ app.use(express.urlencoded({extended: true}))
 
 app.use(mainRoutes)
 
+app.get("/health", (req, res, next) => {
+    res.status(200).json({
+        'status': 'ok'
+    })
+})
+
 db.connectToMongoDB( async () => {
     await startController.setWebhook()
     await startController.setCommands()

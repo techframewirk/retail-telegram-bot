@@ -1,7 +1,7 @@
 version: '3.1'
 
 services:
-  mongo:
+  mongoTelegram:
     image: mongo
     restart: unless-stopped
     ports:
@@ -19,3 +19,22 @@ services:
       - '6379:6379'
     volumes:
       - ./redis:/data
+  beckn-service:
+    image: tvastadmin/beckn-bap
+    restart: unless-stopped
+    ports:
+      - '8002:8002'
+  telegramService:
+    image: tvastadmin/beckn-telegram-service
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      mongoURL: mongodb://tvast:password@mongoTelegram:27017?retryWrites=true&writeConcern=majority
+      mongoDBName: telegram
+      redisHost: redis-server
+      redisPort: 6379
+      telegramToken: 2001313601:AAGoAAvSeuBbo86WnxmO90Tkp88m_PVCkr8
+      telegramWebhook: https://3dfa-49-37-175-80.ngrok.io/telegram/webhook
+      telegramURL: https://api.telegram.org
+      becknService: http://beckn-service:8002
