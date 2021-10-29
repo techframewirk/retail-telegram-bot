@@ -192,9 +192,7 @@ const confirmBooking = async (data, callbackData) => {
 
 const cancelBooking = async (data) => {
     try{
-        console.log("Cencel init")
         const chat_id = data.callback_query.from.id
-        console.log(data)
         const savedData = await db.getDB().collection('booked').findOne({
             chat_id: chat_id,
             inProgress: true
@@ -214,8 +212,6 @@ const cancelBooking = async (data) => {
                 }
             }
         )
-        console.log(response.status)
-        console.log(response.data)
         if (response.status === 200) {
             await db.getDB().collection('booked').updateOne({
                 _id: savedData._id
