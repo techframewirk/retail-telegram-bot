@@ -190,6 +190,51 @@ const confirmBooking = async (data, callbackData) => {
     }
 }
 
+const cancelBooking = async (data) => {
+    try{
+        console.log("Cencel init")
+        const chat_id = data.callback_query.from.id
+        console.log(data)
+        const savedData = await db.getDB().collection('booked').findOne({
+            chat_id: chat_id,
+            inProgress: true
+        }, { sort: { $natural: -1 } })
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/cancel`,
+            {
+                "context": {
+                    "bpp_id": "https://mock_bpp.com/",
+                    "bpp_uri": "https://beckn.free.beeceptor.com",
+                    "transaction_id": savedData.transaction_id
+                },
+                "message": {
+                    "order": {
+                        "id": savedData.updateDriver.message.order.id
+                    }
+                }
+            }
+        )
+        console.log(response.status)
+        console.log(response.data)
+        if (response.status === 200) {
+            await db.getDB().collection('booked').updateOne({
+                _id: savedData._id
+            }, {
+                $set: {
+                    cancelResponse: response.data,
+                    inProgress: false
+                }
+            })
+            replySender({
+                chat_id: chat_id,
+                text: "Your cab has been cancelled!\n\nThank you for using Beckn!"
+            })
+        }
+    } catch (err) {
+        next(err)
+    }
+}
+
 const replySender = async (data) => {
     const response = await axios.post(
         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
@@ -199,5 +244,6 @@ const replySender = async (data) => {
 
 module.exports = {
     handleBooking,
-    confirmBooking
+    confirmBooking,
+    cancelBooking
 }
