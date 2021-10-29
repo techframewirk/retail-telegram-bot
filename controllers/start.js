@@ -3,6 +3,7 @@ const commands = require('../commands.json')
 const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
+const db = require('../utils/mongo')
 
 const setWebhook = async () => {
     try{
@@ -61,6 +62,36 @@ const webhookController = async (req, res, next) => {
                                 }
                             })
                             break
+                        case '/cancelbooking':
+                            console.log('Cancel Triggered')
+                            let activeBookings = []
+                            let activeBookingMessages = []
+                            const activeBookingsCursor = await db.getDB().collection('booked').find({
+                                inProgress: true
+                            })
+                            await activeBookingsCursor.forEach(async (doc) => {
+                                activeBookings.push(doc)
+                            })
+                            activeBookingMessages = activeBookings.map(booking => {
+                                return {
+                                    chat_id: booking.chat_id,
+                                    text: `Cab Booking\n\nCar:${booking.updateDriver.message.order.trip.vehicle.color} ${booking.updateDriver.message.order.trip.vehicle.variant} - ${booking.updateDriver.message.order.trip.vehicle.registration.number}`,
+                                    reply_markup: {
+                                        inline_keyboard: [
+                                            [{
+                                                text: "Cancel",
+                                                callback_data: `cancelCabBooking-${booking._id}`
+                                            }]
+                                        ],
+                                        "resize_keyboard": true,
+                                        "one_time_keyboard": true
+                                    }
+                                }
+                            })
+                            activeBookingMessages.forEach(async (message) => {
+                                await replySender(message)
+                            })
+                            break
                         case '/help':
                             replySender({
                                 "chat_id": data.message.chat.id,
@@ -100,8 +131,10 @@ const webhookController = async (req, res, next) => {
             const callbackData = data.callback_query.data.split('-')[1]
             switch(type) {
                 case 'bookCab':
-                    console.log("Booking Confirmation Triggered")
                     bookCabs.confirmBooking(data, callbackData)
+                    break
+                case 'cancelCabBooking':
+                    bookCabs.cancelBooking(data, callbackData)
                     break
             }
         } else {

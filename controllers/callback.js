@@ -41,7 +41,7 @@ const callBackController = async (req, res, next) => {
                     transaction_id: data.context.transaction_id
                 })
                 await db.getDB().collection('booked').insertOne({
-                    ...savedData1, updateDriver: data
+                    ...savedData1, updateDriver: data, inProgress: true
                 })
                 db.getDB().collection('ongoing').deleteOne({
                     _id: savedData1._id
