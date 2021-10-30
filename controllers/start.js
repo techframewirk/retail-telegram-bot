@@ -63,7 +63,6 @@ const webhookController = async (req, res, next) => {
                             })
                             break
                         case '/cancelbooking':
-                            console.log('Cancel Triggered')
                             let activeBookings = []
                             let activeBookingMessages = []
                             const activeBookingsCursor = await db.getDB().collection('booked').find({

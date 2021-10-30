@@ -25,6 +25,10 @@ const handleBooking = async (cachedData, data) => {
                 const response = await axios.post(
                     `${process.env.becknService}/trigger/search`,
                     {
+                        "context": {
+                            "domain": "nic2004:60221",
+                            "core_version": "0.8.2"
+                        },
                         "message": {
                             "intent": {
                                 "pickups": [
@@ -139,6 +143,8 @@ const confirmBooking = async (data, callbackData) => {
         `${process.env.becknService}/trigger/confirm`,
         {
             "context": {
+                "domain": "nic2004:60221",
+                "core_version": "0.8.2",
                 "bpp_id": "https://mock_bpp.com/",
                 "bpp_uri": "https://beckn.free.beeceptor.com",
                 "transaction_id": savedData.transaction_id
@@ -201,6 +207,8 @@ const cancelBooking = async (data) => {
             `${process.env.becknService}/trigger/cancel`,
             {
                 "context": {
+                    "domain": "nic2004:60221",
+                    "core_version": "0.8.2",
                     "bpp_id": "https://mock_bpp.com/",
                     "bpp_uri": "https://beckn.free.beeceptor.com",
                     "transaction_id": savedData.transaction_id
@@ -223,7 +231,7 @@ const cancelBooking = async (data) => {
             })
             replySender({
                 chat_id: chat_id,
-                text: "Your cab has been cancelled!\n\nThank you for using Beckn!"
+                text: "Cancellation has been initiated!\n\nPlease wait for confirmation."
             })
         }
     } catch (err) {
