@@ -8,34 +8,41 @@ const callBackController = async (req, res, next) => {
         switch(data.context.action) {
             case 'on_search':
                 const savedData = await db.getDB().collection('ongoing').findOne({
-                    message_id: data.context.message_id
+                    message_id: data.context.message_id,
+                    isCabSelected: false
                 })
-                console.log(savedData.onSearchTriggerResult)
-                await db.getDB().collection('ongoing').updateOne({
-                    _id: savedData._id
-                }, { $set: {
-                    onSearchTriggerResult: savedData.onSearchTriggerResult === undefined? [data] : [...savedData.onSearchTriggerResult, data]
-                }})
-                let cabs = []
-                data.message.catalog.items.forEach(cabData => {
-                    cabs.push({
-                        chat_id: savedData.chat_id,
-                        text: `Name => ${cabData.descriptor.code}\nPrice => Rs.${cabData.price.value.integral}`,
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: "Book",
-                                    callback_data: `bookCab-${cabData.id}`
-                                }]
-                            ],
-                            "resize_keyboard": true,
-                            "one_time_keyboard": true
+                console.log(savedData)
+                if(savedData != null) {
+                    await db.getDB().collection('ongoing').updateOne({
+                        _id: savedData._id
+                    }, {
+                        $set: {
+                            onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
-                })
-                await cabs.forEach(async cab => {
-                    await replySender(cab)
-                })
+                    let cabs = []
+                    data.message.catalog.items.forEach(cabData => {
+                        cabs.push({
+                            chat_id: savedData.chat_id,
+                            text: `Name => ${cabData.descriptor.code}\nPrice => Rs.${cabData.price.value.integral}`,
+                            reply_markup: {
+                                inline_keyboard: [
+                                    [{
+                                        text: "Book",
+                                        callback_data: `bookCab-${cabData.id}`
+                                    }]
+                                ],
+                                "resize_keyboard": true,
+                                "one_time_keyboard": true
+                            }
+                        })
+                    })
+                    await cabs.forEach(async cab => {
+                        await replySender(cab)
+                    })
+                } else {
+                    console.log('Cab Already Booked!')
+                }
                 break
             case 'on_update':
                 const savedData1 = await db.getDB().collection('ongoing').findOne({

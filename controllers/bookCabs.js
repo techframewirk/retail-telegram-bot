@@ -80,6 +80,7 @@ const handleBooking = async (cachedData, data) => {
                     await db.getDB().collection("ongoing").insertOne(
                         {
                             ...cachedData, nextStep: 'cabsSearch', dropLocation: `${data.message.location.latitude},${data.message.location.longitude}`, onSearchTrigger: response.data,
+                            isCabSelected: false,
                             transaction_id: response.data.context.transaction_id,
                             message_id: response.data.context.message_id },
                     )
@@ -168,7 +169,8 @@ const confirmBooking = async (data, callbackData) => {
         await db.getDB().collection('ongoing').updateOne({
             _id: savedData._id
         }, { $set: {
-            confirmationResponse: response.data
+            confirmationResponse: response.data,
+            isCabSelected: true
         } })
         redis.set(chat_id, JSON.stringify({
             chat_id: chat_id,
