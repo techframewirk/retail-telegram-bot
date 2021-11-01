@@ -14,5 +14,9 @@
     {
         "command": "cancelbooking",
         "description": "To Cancel active bookings."
+    },
+    {
+        "command":"metro",
+        "description":"To find metros."
     }
 ]

@@ -3,6 +3,7 @@ const commands = require('../commands.json')
 const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
+const metros = require('./metros')
 const db = require('../utils/mongo')
 
 const setWebhook = async () => {
@@ -102,6 +103,23 @@ const webhookController = async (req, res, next) => {
                                 "chat_id": data.message.chat.id,
                                 "text": "You can avail an array of services from the Kochi Open Mobility Network through StayHalo. Today, you can book taxi rides in Kochi.Next, you will also be able to book water metro rides and view metro schedules.In the days to come, I will help you avail a wider variety of services across the country."
                             })
+                            break;
+                        case '/metro':
+                            redis.set(data.message.from.id, JSON.stringify({
+                                chat_id: data.message.chat.id,
+                                initiatedCommand: '/metro',
+                                nextStep: 'startLocation'
+                            }), (err, reply) => {
+                                if(err) {
+                                    throw err
+                                } else {
+                                    replySender({
+                                        "chat_id":data.message.chat.id,
+                                        "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                                    });
+                                }
+                            })
+                            break;
                     }
                 }
             } else {
@@ -115,6 +133,14 @@ const webhookController = async (req, res, next) => {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
                                     break
+                                case '/metro' :
+                                    // Org Code.
+                                    await metros.handleMetros(cachedData, data);
+                                    // // TEMP Code.
+                                    // replySender({
+                                    //     "chat_id":data.message.chat.id,
+                                    //     text:"Wait for second developing it.."
+                                    // });
                             }
                         } else {
                             replySender({
