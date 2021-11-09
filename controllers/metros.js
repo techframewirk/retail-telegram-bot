@@ -30,7 +30,7 @@ const handleMetros=async(cachedData, data)=>{
                 //TEMP Code.
                 replySenderWithImage({
                     "chat_id":data.message.chat.id,
-                    "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                    "text":"Metro Time Table."
                 }, "D:/Coding/Flutter_Internship/T_Vast/Telegram_Bot/beckn_telegram_v2/testImages/image.png");
             
                 //TODO: make an api call 
