@@ -116,17 +116,17 @@ const webhookController = async (req, res, next) => {
                                     throw err
                                 } else {
                                     // ORG Code.
-                                    // replySender({
-                                    //     "chat_id":data.message.chat.id,
-                                    //     "text":"I am glad to find metros for you!\nPlease help me by sending start location."
-                                    // });
-
-                                    // TEMP Code.
-                                    let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);
-                                    replyUtils.replySenderWithImage({
+                                    replySender({
                                         "chat_id":data.message.chat.id,
-                                        "text":"Metro Time Table."
-                                    },imagePath);
+                                        "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                                    });
+
+                                    // // TEMP Code.
+                                    // let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);
+                                    // replyUtils.replySenderWithImage({
+                                    //     "chat_id":data.message.chat.id,
+                                    //     "text":"Metro Time Table."
+                                    // },imagePath);
                                 }
                             })
                             break;
