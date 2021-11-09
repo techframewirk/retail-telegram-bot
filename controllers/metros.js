@@ -4,6 +4,8 @@ const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const FormData=require('form-data')
 const fs=require('fs')
+const tableUtils=require('./../utils/tableUtils');
+const imageUtils=require('./../utils/imageUtils');
 
 const handleMetros=async(cachedData, data)=>{
     switch (cachedData.nextStep) {
@@ -28,10 +30,11 @@ const handleMetros=async(cachedData, data)=>{
         case metrosSteps.endLocation:
             if(data.message.location!=undefined){
                 //TEMP Code.
+                let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);     
                 replySenderWithImage({
                     "chat_id":data.message.chat.id,
                     "text":"Metro Time Table."
-                }, "D:/Coding/Flutter_Internship/T_Vast/Telegram_Bot/beckn_telegram_v2/testImages/image.png");
+                }, imagePath);
             
                 //TODO: make an api call 
                 // and reply sender as well.
@@ -60,6 +63,7 @@ const replySenderWithImage= async (data, photoUri)=>{
     formData.append('caption', data.text);
     formData.append("photo", fs.createReadStream(photoUri));
     await formData.submit(url);
+    imageUtils.deleteImage(photoUri);
 }
 
 const metrosSteps={
