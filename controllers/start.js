@@ -5,7 +5,8 @@ const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
 const metros = require('./metros')
 const db = require('../utils/mongo')
-const tableUtils=require('../utils/tableUtils');
+const tableUtils=require('../utils/tableUtils')
+const replyUtils=require('../utils/replyUtils')
 
 const setWebhook = async () => {
     try{
@@ -110,14 +111,22 @@ const webhookController = async (req, res, next) => {
                                 chat_id: data.message.chat.id,
                                 initiatedCommand: '/metro',
                                 nextStep: 'startLocation'
-                            }), (err, reply) => {
+                            }), async (err, reply) => {
                                 if(err) {
                                     throw err
                                 } else {
-                                    replySender({
+                                    // ORG Code.
+                                    // replySender({
+                                    //     "chat_id":data.message.chat.id,
+                                    //     "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                                    // });
+
+                                    // TEMP Code.
+                                    let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);
+                                    replyUtils.replySenderWithImage({
                                         "chat_id":data.message.chat.id,
-                                        "text":"I am glad to find metros for you!\nPlease help me by sending start location."
-                                    });
+                                        "text":"Metro Time Table."
+                                    },imagePath);
                                 }
                             })
                             break;

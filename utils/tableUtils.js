@@ -92,7 +92,21 @@ function createRow(values){
 
 function htmlWrap(htmlCode){
     // Use this for setting styles and all.
-    return "<html><body>"+htmlCode+"</body></html>";
+    return "<html>"
+        +"<style>"+
+            "html {"
+                +"position: absolute;"
+            +"}"
+            +".container{"
+                +"padding:50px"
+            +"}"
+        +"</style>"+
+        "<body>"
+            +"<div class=\"container\">"
+                +htmlCode
+            +"</div>"
+        +"</body>"
+    +"</html>";
 }
 
 const timeTablesFolderPath="D:/Coding/Flutter_Internship/T_Vast/Telegram_Bot/beckn_telegram_v2/public/metroTimeTables";
