@@ -56,9 +56,16 @@ const webhookController = async (req, res, next) => {
                                 if(err) {
                                     throw err
                                 } else {
+                                    // // Old
+                                    // replySender({
+                                    //     chat_id: data.message.chat.id,
+                                    //     text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
+                                    // })
+
+                                    // New
                                     replySender({
                                         chat_id: data.message.chat.id,
-                                        text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
+                                        text: "I am glad to book a cab for you!\nWhere do you want to book your ride from?"
                                     })
                                 }
                             })
