@@ -8,9 +8,16 @@ const handleBooking = async (cachedData, data) => {
         case 'pickupLocation':
             if (data.message.location !== undefined) {
                 redis.set(data.message.chat.id, JSON.stringify({ ...cachedData, nextStep: 'dropLocation', pickupLocation: `${data.message.location.latitude},${data.message.location.longitude}` }))
+                // // Old
+                // replySender({
+                //     chat_id: data.message.chat.id,
+                //     text: "Thanks for that! Similarly, please send me the drop location."
+                // })
+
+                // New
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "Thanks for that! Similarly, please send me the drop location."
+                    text: "Where do you want to book your ride to?"
                 })
             } else {
                 replySender({
