@@ -41,14 +41,25 @@ const handleBooking = async (cachedData, data) => {
                                 "pickups": [
                                     {
                                         "location": {
-                                            "gps": {
-                                                "lat": cachedData.pickupLocation.split(",")[0],
-                                                "lon": cachedData.pickupLocation.split(",")[1]
-                                            }
+                                            "address": {
+                                                "state": "Karnataka",
+                                                "country": "India",
+                                                "building": "Juspay Apartments",
+                                                "door": "#817",
+                                                "street": "27th Main",
+                                                "locality": "8th Block Koramangala",
+                                                "city": "Bangalore",
+                                                "area_code": "560047"
+                                            },
+                                            "gps": { "lat": cachedData.pickupLocation.split(",")[0], "lon": cachedData.pickupLocation.split(",")[1] },
                                         },
                                         "id": "",
                                         "transfers": [],
                                         "departure_time": {
+                                            "est": new Date().toISOString(),
+                                            "act": new Date().toISOString()
+                                        },
+                                        "arrival_time": {
                                             "est": "2021-10-18T10:17:26.108226Z",
                                             "act": "2021-10-18T10:17:26.108226Z"
                                         }
@@ -57,30 +68,41 @@ const handleBooking = async (cachedData, data) => {
                                 "drops": [
                                     {
                                         "location": {
-                                            "gps": {
-                                                "lat": data.message.location.latitude,
-                                                "lon": data.message.location.longitude
-                                            }
+                                            "address": {
+                                                "state": "Karnataka",
+                                                "country": "India",
+                                                "building": "Juspay Apartments",
+                                                "door": "#817",
+                                                "street": "27th Main",
+                                                "locality": "8th Block Koramangala",
+                                                "city": "Bangalore",
+                                                "area_code": "560047"
+                                            },
+                                            "gps": { "lat": data.message.location.latitude, "lon": data.message.location.longitude }
                                         },
                                         "id": "",
                                         "transfers": [],
                                         "departure_time": {
+                                            "est": new Date().toISOString(),
+                                            "act": new Date().toISOString()
+                                        },
+                                        "arrival_time": {
                                             "est": "2021-10-18T10:17:26.108226Z",
                                             "act": "2021-10-18T10:17:26.108226Z"
                                         }
                                     }
                                 ],
+                                "fare": {
+                                    "value": { "fractional": "50", "integral": "360" },
+                                    "currency": "INR"
+                                },
                                 "payload": {
                                     "travellers": []
                                 },
-                                "tags": [
-                                    {
-                                        "value": "108132.013",
-                                        "key": "distance"
-                                    }
-                                ]
+                                "tags": [{ "value": "108132.013", "key": "distance" }]
                             }
                         }
+
                     }
                 )
                 if(response.status === 200) {
