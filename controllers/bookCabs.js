@@ -29,6 +29,7 @@ const handleBooking = async (cachedData, data) => {
         case 'dropLocation':
             if (data.message.location !== undefined) {
                 redis.set(data.message.chat.id, JSON.stringify({ ...cachedData, nextStep: 'cabsSearch', dropLocation: `${data.message.location.latitude},${data.message.location.longitude}` }))
+                console.log({ "lat": data.message.location.latitude, "lon": data.message.location.longitude })
                 const response = await axios.post(
                     `${process.env.becknService}/trigger/search`,
                     {
