@@ -52,7 +52,7 @@ const handleBooking = async (cachedData, data) => {
                                                 "city": "Bangalore",
                                                 "area_code": "560047"
                                             },
-                                            "gps": { "lat": cachedData.pickupLocation.split(",")[0], "lon": cachedData.pickupLocation.split(",")[1] },
+                                            "gps": { "lat": `${cachedData.pickupLocation.split(",")[0]}`, "lon": `${cachedData.pickupLocation.split(",")[1]}` },
                                         },
                                         "id": "",
                                         "transfers": [],
@@ -79,7 +79,7 @@ const handleBooking = async (cachedData, data) => {
                                                 "city": "Bangalore",
                                                 "area_code": "560047"
                                             },
-                                            "gps": { "lat": data.message.location.latitude, "lon": data.message.location.longitude }
+                                            "gps": { "lat": `${data.message.location.latitude}`, "lon": `${data.message.location.longitude}` }
                                         },
                                         "id": "",
                                         "transfers": [],
