@@ -5,7 +5,6 @@ const handleParking = async (cachedData, data) => {
     try {
         switch (cachedData.nextStep) {
             case 'booking_location':
-                console.log("Book parking file")
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Do you want to book now or for later?",
@@ -40,7 +39,6 @@ const handleParking = async (cachedData, data) => {
                 })
                 break
             case 'trigger_on_search':
-                console.log("Trigger on search")
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Please send the Pickup location for booking parking."
@@ -76,12 +74,42 @@ const handleCallbackQuery = async (data, callbackData) => {
                     chat_id: data.callback_query.from.id,
                     text: "Book now triggered"
                 })
+                redis.set(data.callback_query.from.id, JSON.stringify({
+                    chat_id: data.callback_query.from.id,
+                    initiatedCommand: '/bookparking',
+                    nextStep: 'booking_location'
+                    }), (err, reply) => {
+                        if (err) {
+                            throw err
+                        } else {
+                            replySender({
+                                "chat_id": data.callback_query.from.id,
+                                "text": "Sure. Please send the Pickup location for booking parking."
+                            })
+                        }
+                    }
+                )
                 break
             case 'booklocationlaters':
                 replySender({
                     chat_id: data.callback_query.from.id,
                     text: "Book later triggered"
                 })
+                redis.set(data.callback_query.from.id, JSON.stringify({
+                    chat_id: data.callback_query.from.id,
+                    initiatedCommand: '/bookparking',
+                    nextStep: 'booking_location'
+                }), (err, reply) => {
+                    if (err) {
+                        throw err
+                    } else {
+                        replySender({
+                            "chat_id": data.callback_query.from.id,
+                            "text": "Sure. Please send the Pickup location for booking parking."
+                        })
+                    }
+                }
+                )
                 break
         }
     } catch (error) {
