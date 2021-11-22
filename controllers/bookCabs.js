@@ -102,7 +102,6 @@ const handleBooking = async (cachedData, data) => {
                                 "tags": [{ "value": "108132.013", "key": "distance" }]
                             }
                         }
-
                     }
                 )
                 if(response.status === 200) {

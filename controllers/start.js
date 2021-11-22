@@ -4,6 +4,7 @@ const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
 const db = require('../utils/mongo')
+const bookParking = require('./bookParking')
 
 const setWebhook = async () => {
     try{
@@ -110,9 +111,19 @@ const webhookController = async (req, res, next) => {
                             })
                             break
                         case '/bookparking':
-                            replySender({
-                                "chat_id": data.message.chat.id,
-                                "text": "Sure. Please send the Pickup location for booking parking."
+                            redis.set(data.message.from.id, JSON.stringify({
+                                chat_id: data.message.chat.id,
+                                initiatedCommand: '/bookparking',
+                                nextStep: 'booking_location'
+                            }), (err, reply) => {
+                                if(err) {
+                                    throw err
+                                } else {
+                                    replySender({
+                                        "chat_id": data.message.chat.id,
+                                        "text": "Sure. Please send the Pickup location for booking parking."
+                                    })
+                                }
                             })
                             break
                     }
@@ -127,6 +138,9 @@ const webhookController = async (req, res, next) => {
                             switch (cachedData.initiatedCommand) {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
+                                    break
+                                case '/bookparking':
+                                    await bookParking.handleParking(cachedData, data)
                                     break
                             }
                         } else {
