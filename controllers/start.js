@@ -162,6 +162,9 @@ const webhookController = async (req, res, next) => {
                 case 'cancelCabBooking':
                     bookCabs.cancelBooking(data, callbackData)
                     break
+                case 'bookparking':
+                    bookParking.handleCallbackQuery(data, callbackData)
+                    break
             }
         } else {
             console.log("S")
