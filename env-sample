@@ -6,3 +6,4 @@ telegramToken=2030579238:AAFZ_VboZ463q-3ncnZ4lfQbpAJ9vUtfl0c
 telegramWebhook=https://e385-49-37-175-80.ngrok.io/telegram/webhook
 telegramURL=https://api.telegram.org
 becknService=http://localhost:8002
+SENTRY_DSN=https://e385-49-37-175-80.ngrok.io/sentry/api/

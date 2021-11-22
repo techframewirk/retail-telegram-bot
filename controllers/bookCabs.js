@@ -13,7 +13,6 @@ const handleBooking = async (cachedData, data) => {
                 //     chat_id: data.message.chat.id,
                 //     text: "Thanks for that! Similarly, please send me the drop location."
                 // })
-
                 // New
                 replySender({
                     chat_id: data.message.chat.id,

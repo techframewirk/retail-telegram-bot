@@ -60,7 +60,6 @@ const webhookController = async (req, res, next) => {
                                     //     chat_id: data.message.chat.id,
                                     //     text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
                                     // })
-
                                     // New
                                     replySender({
                                         chat_id: data.message.chat.id,
@@ -109,6 +108,13 @@ const webhookController = async (req, res, next) => {
                                 "chat_id": data.message.chat.id,
                                 "text": "You can avail an array of services from the Kochi Open Mobility Network through StayHalo. Today, you can book taxi rides in Kochi.Next, you will also be able to book water metro rides and view metro schedules.In the days to come, I will help you avail a wider variety of services across the country."
                             })
+                            break
+                        case '/bookparking':
+                            replySender({
+                                "chat_id": data.message.chat.id,
+                                "text": "Sure. Please send the Pickup location for booking parking."
+                            })
+                            break
                     }
                 }
             } else {
