@@ -121,7 +121,7 @@ const webhookController = async (req, res, next) => {
                                 } else {
                                     replySender({
                                         "chat_id": data.message.chat.id,
-                                        "text": "Sure. Please send the Pickup location for booking parking."
+                                        "text": "Happy to help! Please share your location where you need parking."
                                     })
                                 }
                             })
