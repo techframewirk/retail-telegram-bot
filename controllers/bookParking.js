@@ -1,5 +1,8 @@
 const redis = require('../utils/redis')
 const replySender = require('./replySender')
+const parkingSearchJSON = require('../requestJSONs/parking_search.json')
+const axios = require('axios').default
+const mongo = require('../utils/mongo')
 
 const handleParking = async (cachedData, data) => {
     try {
@@ -117,12 +120,58 @@ const handleCallbackQuery = async (data, callbackData) => {
                 })
                 break
             case 'finalizeTimings':
-                redis.get(data.callback_query.from.id, (err, reply) => {
+                redis.get(data.callback_query.from.id, async (err, reply) => {
                     if(err) {
                         throw err
                     } else {
                         const cachedData = JSON.parse(reply)
-                        console.log(cachedData)
+                        const requestBody = {
+                            context: parkingSearchJSON.context,
+                            message: {
+                                intent: {
+                                    provider: {
+                                        locations: [{
+                                            gps: `${cachedData.latitude}, ${cachedData.longitude}`
+                                        }]
+                                    },
+                                    fulfillment: {
+                                        start: {
+                                            time: {
+                                                timestamp: new Date(cachedData.startTime).toISOString()
+                                            }
+                                        },
+                                        end: {
+                                            time: {
+                                                timestamp: new Date(cachedData.endTime).toISOString()
+                                            },
+                                            location: {
+                                                gps: `${cachedData.latitude}, ${cachedData.longitude}`
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        const response = await axios.post(
+                            `${process.env.becknService}/trigger/search`,
+                            requestBody
+                        )
+                        if(response.status === 200) {
+                            await mongo.getDB().collection('ongoing').insertOne({
+                                chat_id: data.callback_query.from.id,
+                                initiatedCommand: cachedData.initiatedCommand,
+                                nextStep: 'confirmParkingSpot',
+                                parkingLocationRequested: cachedData.latitude + ', ' + cachedData.longitude,
+                                startTime: cachedData.startTime,
+                                endTime: cachedData.endTime,
+                                searchTriggerRequestBody: requestBody,
+                                searchTriggerResponseBody: response.data
+                            })
+                            replySender({
+                                "chat_id": data.callback_query.from.id,
+                                "text": "Your parking reservation has been successfully made.\nPlease wait for the Payment Link from the parking provider."
+                            })
+                        }
                     }
                 })
                 break
