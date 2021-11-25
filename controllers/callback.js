@@ -9,7 +9,7 @@ const callBackController = async (req, res, next) => {
             case 'on_search':
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     message_id: data.context.message_id,
-                    isCabSelected: false
+                    isResolved: false
                 })
                 if(savedData != null) {
                     await db.getDB().collection('ongoing').updateOne({
@@ -19,8 +19,9 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
-                    if (data.message.catalog.bpp/providers.find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog.bpp / providers.find(provider => provider.id === 'pinpark') !== null ) {
-                        const resultDocument = data.message.catalog.bpp/providers.find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog.bpp / providers.find(provider => provider.id === 'pinpark')
+                    if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
+                        const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
+                        console.log(resultDocument)
                         let parkingSpaces = resultDocument.items.map(item => {
                             return {
                                 chat_id: savedData.chat_id,
@@ -37,28 +38,31 @@ const callBackController = async (req, res, next) => {
                                 }
                             }
                         })
-                        
-                    }
-                    let cabs = []
-                    data.message.catalog.items.forEach(cabData => {
-                        cabs.push({
-                            chat_id: savedData.chat_id,
-                            text: `Name => ${cabData.descriptor.code}\nPrice => Rs.${cabData.price.value.integral}`,
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{
-                                        text: "Book",
-                                        callback_data: `bookCab-${cabData.id}`
-                                    }]
-                                ],
-                                "resize_keyboard": true,
-                                "one_time_keyboard": true
-                            }
+                        parkingSpaces.forEach(parkingSpace => {
+                            replySender(parkingSpace)
                         })
-                    })
-                    await cabs.forEach(async cab => {
-                        await replySender(cab)
-                    })
+                    } else {
+                        let cabs = []
+                        data.message.catalog.items.forEach(cabData => {
+                            cabs.push({
+                                chat_id: savedData.chat_id,
+                                text: `Name => ${cabData.descriptor.code}\nPrice => Rs.${cabData.price.value.integral}`,
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{
+                                            text: "Book",
+                                            callback_data: `bookCab-${cabData.id}`
+                                        }]
+                                    ],
+                                    "resize_keyboard": true,
+                                    "one_time_keyboard": true
+                                }
+                            })
+                        })
+                        await cabs.forEach(async cab => {
+                            await replySender(cab)
+                        })
+                    }
                 } else {
                     console.log('Cab Already Booked!')
                 }

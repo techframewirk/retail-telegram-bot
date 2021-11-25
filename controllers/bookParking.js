@@ -167,6 +167,7 @@ const handleCallbackQuery = async (data, callbackData) => {
                                 searchTriggerRequestBody: requestBody,
                                 searchTriggerResponseBody: response.data,
                                 message_id: response.data.context.message_id,
+                                isResolved: false,
                                 transaction_id: response.data.context.transaction_id
                             })
                             replySender({
