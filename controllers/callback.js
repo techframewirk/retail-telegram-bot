@@ -21,7 +21,6 @@ const callBackController = async (req, res, next) => {
                     })
                     if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
                         const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
-                        console.log(resultDocument)
                         let parkingSpaces = resultDocument.items.map(item => {
                             return {
                                 chat_id: savedData.chat_id,
@@ -30,7 +29,7 @@ const callBackController = async (req, res, next) => {
                                     inline_keyboard: [
                                         [{
                                             text: "Book",
-                                            callback_data: `bookparking-${item.location_id}-${item.id}`
+                                            callback_data: `bookparking-selectparkingslot-${item.location_id}-${item.id}`
                                         }]
                                     ],
                                     "resize_keyboard": true,
@@ -40,6 +39,15 @@ const callBackController = async (req, res, next) => {
                         })
                         parkingSpaces.forEach(parkingSpace => {
                             replySender(parkingSpace)
+                        })
+                        await db.getDB().collection('ongoing').updateOne({
+                            _id: savedData._id
+                        }, {
+                            $set: {
+                                parkingResponse: data,
+                                parkingLocations: data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark').locations,
+                                parkingLocations: data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark').items
+                            }
                         })
                     } else {
                         let cabs = []
@@ -65,6 +73,27 @@ const callBackController = async (req, res, next) => {
                     }
                 } else {
                     console.log('Cab Already Booked!')
+                }
+                break
+            case 'on_confirm':
+                const bookingData = await db.getDB().collection('ongoing').findOne({
+                    message_id: data.context.message_id,
+                    awaitingConfirmation: true
+                })
+                if(bookingData != null) {
+                    const message = {
+                        chat_id: bookingData.chat_id,
+                        text: `Payment Amount:${data.message.order.payment.params.amount}\n\nPlease pay using the below link to confirm Parking Spot!\n\n\n${data.message.order.payment.uri}`
+                    }
+                    await replySender(message)
+                    await db.getDB().collection('ongoing').updateOne({
+                        _id: bookingData._id
+                    }, {
+                        $set: {
+                            awaitingConfirmation: false,
+                            paymentConfirmation: data
+                        }
+                    })
                 }
                 break
             case 'on_update':

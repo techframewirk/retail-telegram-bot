@@ -3,6 +3,7 @@ const replySender = require('./replySender')
 const parkingSearchJSON = require('../requestJSONs/parking_search.json')
 const axios = require('axios').default
 const mongo = require('../utils/mongo')
+const parkingConfirmJSON = require('../requestJSONs/parking_confirm.json')
 
 const handleParking = async (cachedData, data) => {
     try {
@@ -69,6 +70,115 @@ const handleParking = async (cachedData, data) => {
                     message = {
                         chat_id: data.message.chat.id,
                         text: `Sorry.\nReservation End Time is ${endDateTime.toLocaleString()} Parking spaces can be reserved until the end of day only. (i.e., 11:59 PM)`,
+                    }
+                }
+                break
+            case 'recordname':
+                const vehicleNumber = data.message.text
+                await mongo.getDB().collection('ongoing').updateOne({
+                    chat_id: data.message.chat.id
+                }, {
+                    $set: {
+                        vehicleNumber: vehicleNumber
+                    }
+                })
+                message = {
+                    chat_id: data.message.chat.id,
+                    text: `Please send your number!`,
+                    reply_markup: {
+                        keyboard: [
+                            [{
+                                "text": "Send Contact",
+                                "request_contact": true
+                            }]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
+                }
+                updatedCachedData = {
+                    ...cachedData,
+                    nextStep: 'recordnumber'
+                }
+                break
+            case 'recordnumber':
+                console.log(data)
+                const contactNumber = data.message.contact.phone_number
+                await mongo.getDB().collection('ongoing').updateOne({
+                    chat_id: data.message.chat.id
+                }, {
+                    $set: {
+                        contactNumber: contactNumber,
+                        recordName: `${data.message.contact.first_name} ${data.message.contact.last_name}`,
+                        awaitingConfirmation: true
+                    }
+                })
+                const savedData = await mongo.getDB().collection('ongoing').findOne({
+                    chat_id: data.message.chat.id
+                })
+                const response = await axios.post(
+                    `${process.env.becknService}/trigger/confirm`,
+                    {
+                        "context": {
+                            "domain": "nic2004:63031",
+                            "core_version": "0.9.3",
+                            "bpp_id": "bpp3.beckn.org",
+                            "bpp_uri": "https://bpp3.beckn.org/rest/V1/beckn",
+                            "transaction_id": savedData.transaction_id,
+                        },
+                        "message": {
+                            "order": {
+                                "provider": {
+                                    "locations": [
+                                        {
+                                            "id": savedData.selectedParkingSpot.locationId,
+                                        }
+                                    ]
+                                },
+                                "items": [
+                                    {
+                                        "id": savedData.selectedParkingSpot.itemId,
+                                        "quantity": {
+                                            "count": 1
+                                        }
+                                    }
+                                ],
+                                "billing": {
+                                    "name": savedData.recordName,
+                                    "phone": savedData.contactNumber,
+                                },
+                                "fulfillment": {
+                                    "start": {
+                                        "time": {
+                                            "timestamp": new Date(savedData.startTime).toISOString()
+                                        }
+                                    },
+                                    "end": {
+                                        "time": {
+                                            "timestamp": new Date(savedData.endTime).toISOString()
+                                        }
+                                    },
+                                    "vehicle": {
+                                        "registration": savedData.vehicleNumber
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+                if(response.status === 200) {
+                    await mongo.getDB().collection('ongoing').updateOne({
+                        chat_id: data.message.chat.id
+                    }, {
+                        $set: {
+                            confirmationRequestResponse: response.data,
+                            awaitingConfirmation: true,
+                            message_id: response.data.context.message_id
+                        }
+                    })
+                    message = {
+                        chat_id: data.message.chat.id,
+                        text: `Thank you!\nPlease wait for confirmation!`,
                     }
                 }
                 break
@@ -170,13 +280,93 @@ const handleCallbackQuery = async (data, callbackData) => {
                                 isResolved: false,
                                 transaction_id: response.data.context.transaction_id
                             })
-                            replySender({
-                                "chat_id": data.callback_query.from.id,
-                                "text": "Your parking reservation has been successfully made.\nPlease wait for the Payment Link from the parking provider."
-                            })
+                            redis.set(data.callback_query.from.id, JSON.stringify({
+                                chat_id: data.callback_query.from.id,
+                                initiatedCommand: cachedData.initiatedCommand,
+                                nextStep: 'confirmParkingSpot',
+                            }), (err, reply) => {
+                                if(err) {
+                                    throw err
+                                } else {
+                                    replySender({
+                                        "chat_id": data.callback_query.from.id,
+                                        "text": "Your parking reservation has been successfully made.\nPlease wait for the Payment Link from the parking provider."
+                                    })
+                                }
+                            } )
+                            
                         }
                     }
                 })
+                break
+            case 'selectparkingslot':
+                const locationId = data.callback_query.data.split('-')[2]
+                const itemId = data.callback_query.data.split('-')[3]
+                await mongo.getDB().collection('ongoing').updateOne({
+                    chat_id: data.callback_query.from.id
+                }, {
+                    $set: {
+                        isResolved: true,
+                        selectedParkingSpot: {
+                            locationId: locationId,
+                            itemId: itemId
+                        }
+                    }
+                })
+                redis.set(data.callback_query.from.id, JSON.stringify({
+                    chat_id: data.callback_query.from.id,
+                    initiatedCommand: '/bookparking',
+                    nextStep: 'recordname',
+                }), (err, reply) => {
+                    if(err) {
+                        throw err
+                    } else {
+                        replySender({
+                            "chat_id": data.callback_query.from.id,
+                            "text": "Send Your Vehicle number for reservation!"
+                        })
+                    }
+                })
+                // const requestBody = {
+                //     context: {
+                //         ...parkingConfirmJSON.context,
+                //         transaction_id: savedDoc.transaction_id,
+                //     },
+                //     message: {
+                //         order: {
+                //             provider: {
+                //                 locations: [{
+                //                     id: locationId
+                //                 }]
+                //             },
+                //             items: [{
+                //                 id: itemId,
+                //                 quantity: {
+                //                     count: 1
+                //                 }
+                //             }],
+                //             billing: {
+                //                 name: "Name", // To Do
+                //                 phone: "8585858585"
+                //             },
+                //             fulfillment: {
+                //                 start: {
+                //                     time: {
+                //                         timestamp: new Date(savedDoc.startTime).toISOString()
+                //                     }
+                //                 },
+                //                 end: {
+                //                     time: {
+                //                         timestamp: new Date(savedDoc.endTime).toISOString()
+                //                     },
+                //                 },
+                //                 vehicle: {
+                //                     registration: "CH01DD7785"
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
                 break
         }
     } catch (error) {
