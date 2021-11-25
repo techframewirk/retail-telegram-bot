@@ -11,7 +11,6 @@ const callBackController = async (req, res, next) => {
                     message_id: data.context.message_id,
                     isCabSelected: false
                 })
-                console.log(savedData)
                 if(savedData != null) {
                     await db.getDB().collection('ongoing').updateOne({
                         _id: savedData._id
@@ -20,6 +19,26 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
+                    if (data.message.catalog.bpp/providers.find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog.bpp / providers.find(provider => provider.id === 'pinpark') !== null ) {
+                        const resultDocument = data.message.catalog.bpp/providers.find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog.bpp / providers.find(provider => provider.id === 'pinpark')
+                        let parkingSpaces = resultDocument.items.map(item => {
+                            return {
+                                chat_id: savedData.chat_id,
+                                text: `Name => ${item.descriptor.name}\nPrice => Rs.${item.price.value}\nQuantity Available:${item.quantity.available.count}`,
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{
+                                            text: "Book",
+                                            callback_data: `bookparking-${item.location_id}-${item.id}`
+                                        }]
+                                    ],
+                                    "resize_keyboard": true,
+                                    "one_time_keyboard": true
+                                }
+                            }
+                        })
+                        
+                    }
                     let cabs = []
                     data.message.catalog.items.forEach(cabData => {
                         cabs.push({

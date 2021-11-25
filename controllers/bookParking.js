@@ -165,7 +165,9 @@ const handleCallbackQuery = async (data, callbackData) => {
                                 startTime: cachedData.startTime,
                                 endTime: cachedData.endTime,
                                 searchTriggerRequestBody: requestBody,
-                                searchTriggerResponseBody: response.data
+                                searchTriggerResponseBody: response.data,
+                                message_id: response.data.context.message_id,
+                                transaction_id: response.data.context.transaction_id
                             })
                             replySender({
                                 "chat_id": data.callback_query.from.id,
