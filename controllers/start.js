@@ -4,6 +4,7 @@ const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
 const db = require('../utils/mongo')
+const wonderlaTicket = require('./wonderlaTicket');
 
 const setWebhook = async () => {
     try{
@@ -109,6 +110,22 @@ const webhookController = async (req, res, next) => {
                                 "chat_id": data.message.chat.id,
                                 "text": "You can avail an array of services from the Kochi Open Mobility Network through StayHalo. Today, you can book taxi rides in Kochi.Next, you will also be able to book water metro rides and view metro schedules.In the days to come, I will help you avail a wider variety of services across the country."
                             })
+                            break
+                        case '/wonderlaticket':
+                            redis.set(data.message.from.id, JSON.stringify({
+                                chat_id: data.message.chat.id,
+                                initiatedCommand: '/wonderlaticket',
+                                nextStep: wonderlaTicket.steps.selectLocation
+                            }), (err, reply) => {
+                                if(err) {
+                                    throw err
+                                } else {
+                                    replySender({
+                                        "chat_id": data.message.chat.id,
+                                        "text": wonderlaTicket.messages.selectLocation
+                                    })
+                                }
+                            })
                     }
                 }
             } else {
@@ -121,6 +138,10 @@ const webhookController = async (req, res, next) => {
                             switch (cachedData.initiatedCommand) {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
+                                    break
+
+                                case '/wonderlaticket':
+                                    await wonderlaTicket.handleBooking(cachedData, data)
                                     break
                             }
                         } else {
