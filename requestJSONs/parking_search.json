@@ -2,8 +2,8 @@
     "context": {
         "domain": "nic2004:63031",
         "core_version": "0.9.3",
-        "bpp_id": "bpp3.beckn.org",
-        "bpp_uri": "https://bpp3.beckn.org/rest/V1/beckn"
+        "bpp_id": "35.200.188.6",
+        "bpp_uri": "http://35.200.188.6/rest/V1/beckn/"
     },
     "message": {
         "intent": {
