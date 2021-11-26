@@ -57,7 +57,11 @@ app.use(function onError(err, req, res, next) {
 });
 
 db.connectToMongoDB( async () => {
-    await startController.setWebhook()
-    await startController.setCommands()
-    app.listen(3000)
+    try {
+        await startController.setWebhook()
+        await startController.setCommands()
+        app.listen(3000)
+    } catch (err) {
+        console.log(err)
+    }
 })

@@ -1,0 +1,47 @@
+{
+    "context": {
+        "domain": "nic2004:63031",
+        "core_version": "0.9.3",
+        "bpp_id": "bpp3.beckn.org",
+        "bpp_uri": "https://bpp3.beckn.org/rest/V1/beckn",
+        "transaction_id": "ff6ebb33-41c9-4f72-823a-81a6a71221dd"
+    },
+    "message": {
+        "order": {
+            "provider": {
+                "locations": [
+                    {
+                        "id": "pl2"
+                    }
+                ]
+            },
+            "items": [
+                {
+                    "id": "1",
+                    "quantity": {
+                        "count": 1
+                    }
+                }
+            ],
+            "billing": {
+                "name": "Noor Mohamad",
+                "phone": "+917888335617"
+            },
+            "fulfillment": {
+                "start": {
+                    "time": {
+                        "timestamp": "2021-10-25T12:50:27.784Z"
+                    }
+                },
+                "end": {
+                    "time": {
+                        "timestamp": "2021-11-28T13:50:27.784Z"
+                    }
+                },
+                "vehicle": {
+                    "registration": "CH0185673"
+                }
+            }
+        }
+    }
+}
