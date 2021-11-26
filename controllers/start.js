@@ -42,6 +42,7 @@ const webhookController = async (req, res, next) => {
     try{
         const data = req.body
         console.log(data)
+        console.log(typeof (data.message.entities) != 'undefined');
         if(data.message != undefined) {
             if (typeof (data.message.entities) != 'undefined') {
                 if (data.message.entities[0].type == 'bot_command') {

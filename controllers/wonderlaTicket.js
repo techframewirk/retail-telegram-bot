@@ -7,8 +7,7 @@ const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
         case steps.selectLocation:
             const locationNumber=parseInt(data.message.text);
-            if((locationNumber!=undefined)&&(locationNumber<=locations.length)){
-                console.log(locations[locationNumber-1]);
+            if((locationNumber!=undefined)&&(!Number.isNaN(locationNumber))&&(locationNumber<=locations.length)){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.selectDate,
@@ -29,7 +28,245 @@ const handleBooking = async (cachedData, data) => {
         break;
 
         case steps.selectDate:
-        console.log("Code for booking date selection.");    
+            const bookingDate=Date.parse(data.message.text);
+            if((bookingDate!=undefined)&&(bookingDate!=NaN)){
+                redis.set(data.message.chat.id, JSON.stringify({ 
+                    ...cachedData, 
+                    nextStep: steps.adultRegularTickets,
+                    bookingDate:bookingDate
+                }));
+
+                replySender({
+                    chat_id:data.message.chat.id,
+                    text:messages.adultRegularTickets
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Invalid Date Format. Please try again!"
+                });
+            }
+        break;
+
+        case steps.adultRegularTickets:
+            {
+                const ticketCount=parseInt(data.message.text);
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                    redis.set(data.message.chat.id, JSON.stringify({ 
+                        ...cachedData, 
+                        nextStep: steps.adultFastrackTickets,
+                        adultRegularTickets:ticketCount
+                    }));
+
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.adultFastrackTickets
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Invalid Number. Please try again!"
+                    });
+                }
+            }
+        break;
+
+        case steps.adultFastrackTickets:
+            {
+                const ticketCount=parseInt(data.message.text);
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                    redis.set(data.message.chat.id, JSON.stringify({ 
+                        ...cachedData, 
+                        nextStep: steps.childRegularTickets,
+                        adultFastrackTickets:ticketCount
+                    }));
+
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.childRegularTickets
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Invalid Number. Please try again!"
+                    });
+                }
+            }
+        break;
+        case steps.childRegularTickets:
+            {
+                const ticketCount=parseInt(data.message.text);
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                    redis.set(data.message.chat.id, JSON.stringify({ 
+                        ...cachedData, 
+                        nextStep: steps.childFastrackTickets,
+                        childRegularTickets:ticketCount
+                    }));
+
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.childFastrackTickets
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Invalid Number. Please try again!"
+                    });
+                }
+            }
+        break;
+
+        case steps.childFastrackTickets:
+            {
+                const ticketCount=parseInt(data.message.text);
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                    redis.set(data.message.chat.id, JSON.stringify({ 
+                        ...cachedData, 
+                        nextStep: steps.seniorCitizenTickets,
+                        childFastrackTickets:ticketCount
+                    }));
+
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.seniorCitizenTickets
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Invalid Number. Please try again!"
+                    });
+                }
+            }
+        break;
+        case steps.seniorCitizenTickets:
+            {
+                const ticketCount=parseInt(data.message.text);
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                    redis.set(data.message.chat.id, JSON.stringify({ 
+                        ...cachedData, 
+                        nextStep: steps.firstName,
+                        seniorCitizenTickets:ticketCount
+                    }));
+
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.firstName
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Invalid Number. Please try again!"
+                    });
+                }
+            }
+        break;
+        case steps.firstName:{
+            const firstNameValue=data.message.text;
+            if(firstNameValue!=undefined){
+                redis.set(data.message.chat.id, JSON.stringify({ 
+                    ...cachedData, 
+                    nextStep: steps.lastName,
+                    firstName:firstNameValue
+                }));
+                
+                replySender({
+                    chat_id:data.message.chat.id,
+                    text:messages.lastName
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Doesn't look like first name.\nPlease enter your name."
+                });
+            }
+        }
+        break;
+        case steps.lastName:{
+            const lastNameValue=data.message.text;
+            if(lastNameValue!=undefined){
+                redis.set(data.message.chat.id, JSON.stringify({ 
+                    ...cachedData, 
+                    nextStep: steps.contactInfo,
+                    lastName:lastNameValue
+                }));
+                
+                replySender({
+                    chat_id:data.message.chat.id,
+                    text:messages.contactInfo
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Doesn't look like first name.\nPlease enter your name."
+                });
+            }
+        }
+        break;
+        case steps.contactInfo:
+        {
+            //TODO: add the regular expression logic.
+            const phoneNumber=data.message.text;
+            if(phoneNumber!=undefined){
+                redis.set(data.message.chat.id, JSON.stringify({ 
+                    ...cachedData, 
+                    nextStep: steps.emailID,
+                    contactInfo:phoneNumber
+                }));
+                
+                console.log({ 
+                    ...cachedData, 
+                    nextStep: steps.emailID,
+                    contactInfo:phoneNumber
+                });
+                replySender({
+                    chat_id:data.message.chat.id,
+                    text:messages.emailID
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Doesn't look like your phone number.\nPlease enter your name."
+                });
+            }
+        }
+        break;
+        case steps.emailID:
+        {
+            //TODO: add the regular expression logic.
+            const emailId=data.message.text;
+            if(emailId!=undefined){
+                redis.set(data.message.chat.id, JSON.stringify({ 
+                    ...cachedData, 
+                    nextStep: steps.paymentLink,
+                    emailId:emailId
+                }));
+                
+                console.log({ 
+                    ...cachedData, 
+                    nextStep: steps.paymentLink,
+                    emailId:emailId
+                });
+                replySender({
+                    chat_id:data.message.chat.id,
+                    text:messages.paymentLink("5000", "http://www.google.com")
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Doesn't look like your email address.\nPlease enter your name."
+                });
+            }
+        }
         break;
     }
 }
@@ -62,7 +299,7 @@ const steps={
 const messages={
     "wonderlaTicket":"Some welcome message.",
     "selectLocation":"Select Location: \n1. Kochi\n2.Bangalore\n3.Hyderabad\nEnter the number assigned to your desired loction.",
-    "selectDate":"Please select the date for tickets.",
+    "selectDate":"Please enter the date for tickets in the given format.\nMM.DD.YYYY",
     "adultRegularTickets":"How many Adult - regular tickets would you like to book?",
     "adultFastrackTickets":"How many Adult - fastrack tickets would you like to book?",
     "childRegularTickets":"How many Child - regular tickets would you like to book?",
