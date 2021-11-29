@@ -1,5 +1,6 @@
 FROM node:14-alpine3.14
 
+ENV TZ="Asia/Kolkata"
 # Create app directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app

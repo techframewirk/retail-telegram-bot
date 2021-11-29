@@ -1,0 +1,158 @@
+[
+    {
+        "_id": "619de4efc36c378ac7cfc1b7",
+        "context": {
+            "domain": "nic2021:52110",
+            "country": "IND",
+            "city": "std:080",
+            "action": "on_search",
+            "core_version": "0.9.3",
+            "bap_id": "bap.stayhalo.in",
+            "bap_uri": "https://bap.stayhalo.in/protocol/",
+            "transaction_id": "ff6ebb33-41c9-4f72-823a-81a6a71221dd",
+            "message_id": "43a4b0fe-a675-446b-af14-a4350420b21e",
+            "timestamp": "2021-11-24T07:08:30Z",
+            "ttl": "P1M",
+            "bpp_id": "bpp3.beckn.org",
+            "bpp_uri": "https://bpp3.beckn.org/rest/V1/beckn/"
+        },
+        "message": {
+            "catalog": {
+                "bpp/descriptor": {
+                    "name": "Bpp3",
+                    "short_desc": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled.",
+                    "images": [
+                        "https://bpp3.beckn.org/pub/media/beckn/business/logo/default/adam_walsh.png"
+                    ]
+                },
+                "bpp/providers": [
+                    {
+                        "id": "pinpark",
+                        "descriptor": {
+                            "name": "Pinpark",
+                            "short_desc": "Lorem Ipsum is that it has a more-or-less normal distribution of letters.",
+                            "images": [
+                                "https://bpp3.beckn.org/pub/media/beckn/provider/logo/default/pinpark.jpg"
+                            ]
+                        },
+                        "locations": [
+                            {
+                                "id": "pl1",
+                                "gps": "9.898056, 76.324047",
+                                "address": {
+                                    "door": "",
+                                    "name": "Test Address",
+                                    "building": "Parking Lot",
+                                    "street": "New MLA Rd",
+                                    "locality": "Panangad",
+                                    "state": "Kerala",
+                                    "country": "IND",
+                                    "area_code": "682506"
+                                },
+                                "station_code": "",
+                                "city": {
+                                    "name": "Kochi",
+                                    "code": ""
+                                },
+                                "country": {
+                                    "name": "IND",
+                                    "code": "IN"
+                                }
+                            },
+                            {
+                                "id": "pl2",
+                                "gps": "9.969124, 76.321513",
+                                "address": {
+                                    "door": "",
+                                    "name": "Vyttila Parking",
+                                    "building": "12",
+                                    "street": "Kaniyampuzha Rd",
+                                    "locality": "Vyttila",
+                                    "state": "Kerala",
+                                    "country": "IND",
+                                    "area_code": "682019"
+                                },
+                                "station_code": "",
+                                "city": {
+                                    "name": "Kochi",
+                                    "code": ""
+                                },
+                                "country": {
+                                    "name": "IND",
+                                    "code": "IN"
+                                }
+                            }
+                        ],
+                        "categories": [
+                            {
+                                "id": "4-wheeler-parking",
+                                "descriptor": {
+                                    "name": "4 wheeler parking"
+                                }
+                            }
+                        ],
+                        "items": [
+                            {
+                                "id": "4",
+                                "descriptor": {
+                                    "name": "Four wheeler parking",
+                                    "images": []
+                                },
+                                "price": {
+                                    "currency": "INR",
+                                    "value": "40.00"
+                                },
+                                "matched": true,
+                                "location_id": "pl1",
+                                "quantity": {
+                                    "available": {
+                                        "count": 3
+                                    }
+                                },
+                                "category_id": "4-wheeler-parking"
+                            },
+                            {
+                                "id": "3",
+                                "descriptor": {
+                                    "name": "Four wheeler parking monthly pass",
+                                    "images": []
+                                },
+                                "price": {
+                                    "currency": "INR",
+                                    "value": "40.00"
+                                },
+                                "matched": true,
+                                "location_id": "pl1",
+                                "quantity": {
+                                    "available": {
+                                        "count": 2
+                                    }
+                                },
+                                "category_id": "4-wheeler-parking"
+                            },
+                            {
+                                "id": "1",
+                                "descriptor": {
+                                    "name": "Four wheeler parking",
+                                    "images": []
+                                },
+                                "price": {
+                                    "currency": "INR",
+                                    "value": "40.00"
+                                },
+                                "matched": true,
+                                "location_id": "pl2",
+                                "quantity": {
+                                    "available": {
+                                        "count": 5
+                                    }
+                                },
+                                "category_id": "4-wheeler-parking"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+]

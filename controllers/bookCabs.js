@@ -13,7 +13,6 @@ const handleBooking = async (cachedData, data) => {
                 //     chat_id: data.message.chat.id,
                 //     text: "Thanks for that! Similarly, please send me the drop location."
                 // })
-
                 // New
                 replySender({
                     chat_id: data.message.chat.id,
@@ -103,14 +102,13 @@ const handleBooking = async (cachedData, data) => {
                                 "tags": [{ "value": "108132.013", "key": "distance" }]
                             }
                         }
-
                     }
                 )
                 if(response.status === 200) {
                     await db.getDB().collection("ongoing").insertOne(
                         {
                             ...cachedData, nextStep: 'cabsSearch', dropLocation: `${data.message.location.latitude},${data.message.location.longitude}`, onSearchTrigger: response.data,
-                            isCabSelected: false,
+                            isResolved: false,
                             transaction_id: response.data.context.transaction_id,
                             message_id: response.data.context.message_id },
                     )
@@ -200,7 +198,7 @@ const confirmBooking = async (data, callbackData) => {
             _id: savedData._id
         }, { $set: {
             confirmationResponse: response.data,
-            isCabSelected: true
+            isResolved: true
         } })
         redis.set(chat_id, JSON.stringify({
             chat_id: chat_id,
