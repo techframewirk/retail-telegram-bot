@@ -2,6 +2,10 @@ const axios = require('axios').default
 const validations = require('./validations')
 const redis = require('../utils/redis')
 const db = require('../utils/mongo')
+const replySender=require('./replySender');
+const replySenderWithImage=require('./replySenderWithImage');
+const tableUtils=require('./../utils/tableUtils');
+const imageUtils=require('./../utils/imageUtils');
 
 const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -36,10 +40,13 @@ const handleBooking = async (cachedData, data) => {
                     bookingDate:bookingDate
                 }));
 
-                replySender({
+                // Reply sender with this image and then delete it.
+                let imagePath=await tableUtils.createWonderlaTicketsInfo([], data.message.chat.id);
+                await replySenderWithImage({
                     chat_id:data.message.chat.id,
                     text:messages.adultRegularTickets
-                });
+                }, imagePath);
+                await imageUtils.deleteImage(imagePath);
             }
             else{
                 replySender({
@@ -58,7 +65,7 @@ const handleBooking = async (cachedData, data) => {
                         nextStep: steps.adultFastrackTickets,
                         adultRegularTickets:ticketCount
                     }));
-
+                    
                     replySender({
                         chat_id:data.message.chat.id,
                         text:messages.adultFastrackTickets
@@ -271,12 +278,12 @@ const handleBooking = async (cachedData, data) => {
     }
 }
 
-const replySender = async (data) => {
-    const response = await axios.post(
-        `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
-        data
-    )
-}
+// const replySender = async (data) => {
+//     const response = await axios.post(
+//         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
+//         data
+//     )
+// }
 
 const locations=['Kochi', 'Bangalore', 'Hyderabad'];
 

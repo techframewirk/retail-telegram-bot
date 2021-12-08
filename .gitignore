@@ -2,3 +2,5 @@ node_modules
 redis
 data
 .env
+
+public

@@ -1,5 +1,6 @@
 const nodeHtmlToImage = require('node-html-to-image');
 const imageUtils=require('./imageUtils');
+const path=require('path');
 
 // This function will return the image path.
 async function createMetroTimeTable(data, chat_id){
@@ -46,14 +47,13 @@ async function createMetroTimeTable(data, chat_id){
     ];
 
     let imageFileName=chat_id+"_"+Date.now().toString()+".png";
-    let imagePath=timeTablesFolderPath+'/'+imageFileName;
+    let imagePath=path.resolve('public/metroTimeTables/'+imageFileName);
     let tableHtmlCode=htmlWrap(createTable(tempData, columns, keys));
     await imageUtils.createImageFromHtml(imagePath, tableHtmlCode);
     return imagePath;
 }
 
 function createTable(data, columns, keys){
-    console.log(columns);
     let tableHeaders=createHeaders(columns);
     let rowsHtml="";
     rowsHtml+=tableHeaders;
@@ -90,6 +90,36 @@ function createRow(values){
     return row;
 }
 
+async function createWonderlaTicketsInfo(data, chat_id){
+    let rowsHtml="";
+    rowsHtml+=head3Text("Adult");
+    rowsHtml+=normalText("Rs 846.61 Per Ticket.");
+    rowsHtml+=head3Text("Child");
+    rowsHtml+=normalText("Rs 761.61 Per Ticket.");
+    rowsHtml+=head3Text("Senior Citizen");
+    rowsHtml+=normalText("Rs 634.61 Per Ticket.");
+    rowsHtml+=head3Text("Fast Track Adult");
+    rowsHtml+=normalText("Rs 1269.61 Per Ticket.");
+    rowsHtml+=head3Text("Fast Track Child");
+    rowsHtml+=normalText("Rs 1142.61 Per Ticket.");
+
+    rowsHtml="<div>"+rowsHtml+"</div>"
+
+    let imageFileName=chat_id+"_"+Date.now().toString()+".png";
+    let imagePath=path.resolve('public/wonderlaTicketPricing/'+imageFileName);
+    let htmlCode=htmlWrap(rowsHtml);
+    await imageUtils.createImageFromHtml(imagePath, htmlCode);
+    return imagePath;
+}
+
+function head3Text(data){
+    return "<h3>"+data+"</h3><br>";
+}
+
+function normalText(data){
+    return "<div>"+data+"</div><br>";
+}
+
 function htmlWrap(htmlCode){
     // Use this for setting styles and all.
     return "<html>"
@@ -109,7 +139,8 @@ function htmlWrap(htmlCode){
     +"</html>";
 }
 
-const timeTablesFolderPath="D:/Coding/Flutter_Internship/T_Vast/Telegram_Bot/beckn_telegram_v2/public/metroTimeTables";
+// const timeTablesFolderPath="D:/Coding/Flutter_Internship/T_Vast/Telegram_Bot/beckn_telegram_v2/public/metroTimeTables";
 module.exports={
     createMetroTimeTable,
+    createWonderlaTicketsInfo
 }
