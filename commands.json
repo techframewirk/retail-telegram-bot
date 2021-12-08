@@ -16,12 +16,11 @@
         "description": "To Cancel active bookings."
     },
     {
-<<<<<<< HEAD
         "command": "wonderlaticket",
         "description": "To book Wonderla Ticket"
-=======
+    },
+    {
         "command": "bookparking",
         "description": "To book Parking spaces"
->>>>>>> d3183137e8c401f77d33bb5b36c5de3053bc338c
     }
 ]
