@@ -24,7 +24,7 @@ async function createPaymentLink(amount, name, email, contact, description){
             },
             reminder_enable: true,
             notes: {
-              policy_name: "Jeevan Bima"
+              policy_name: "Wonderla Tickets"
             },
 
             // TODO: change this as well.
