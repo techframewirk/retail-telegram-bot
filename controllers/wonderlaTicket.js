@@ -6,6 +6,7 @@ const replySender=require('./replySender');
 const replySenderWithImage=require('./replySenderWithImage');
 const tableUtils=require('./../utils/tableUtils');
 const imageUtils=require('./../utils/imageUtils');
+const razorpayUtils=require('./../utils/razorpayUtils');
 
 const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -227,12 +228,7 @@ const handleBooking = async (cachedData, data) => {
                     nextStep: steps.emailID,
                     contactInfo:phoneNumber
                 }));
-                
-                console.log({ 
-                    ...cachedData, 
-                    nextStep: steps.emailID,
-                    contactInfo:phoneNumber
-                });
+
                 replySender({
                     chat_id:data.message.chat.id,
                     text:messages.emailID
@@ -256,16 +252,30 @@ const handleBooking = async (cachedData, data) => {
                     nextStep: steps.paymentLink,
                     emailId:emailId
                 }));
-                
-                console.log({ 
-                    ...cachedData, 
-                    nextStep: steps.paymentLink,
-                    emailId:emailId
-                });
-                replySender({
-                    chat_id:data.message.chat.id,
-                    text:messages.paymentLink("5000", "http://www.google.com")
-                });
+
+                // TODO: code to calculate amount from the tickets info.
+                // calculate amount as whole number.
+                // Like for Rs 5 send 500
+                const amount=500;
+                const paymentLinkResponse=await razorpayUtils.createPaymentLink(
+                    amount, cachedData.firstName+" "+cachedData.lastName,
+                    emailId, 
+                    cachedData.contactInfo,
+                    createDescriptionForPaymentLink(cachedData)
+                );
+
+                if(paymentLinkResponse!=null){
+                    replySender({
+                        chat_id:data.message.chat.id,
+                        text:messages.paymentLink(amount*0.01, paymentLinkResponse.short_url)
+                    });
+                }
+                else{
+                    replySender({
+                        chat_id:data.message.chat_id,
+                        text:"Something Went wrong."
+                    });
+                }
             }
             else{
                 replySender({
@@ -284,6 +294,27 @@ const handleBooking = async (cachedData, data) => {
 //         data
 //     )
 // }
+
+const createDescriptionForPaymentLink=(data)=>{
+    let description="Please confirm booking by completing the payments for :"
+    if(data.adultRegularTickets>0){
+        description+="\n\n"+data.adultRegularTickets+" Regular Adult Tickets."
+    }
+    if(data.adultFastrackTickets>0){
+        description+="\n\n"+data.adultFastrackTickets+" Fast Track Adult Tickets."
+    }
+    if(data.childRegularTickets>0){
+        description+="\n\n"+data.childRegularTickets+" Regular Child Tickets."
+    }
+    if(data.childFastrackTickets>0){
+        description+="\n\n"+data.childFastrackTickets+" Fast Track Child Tickets."
+    }
+    if(data.seniorCitizenTickets>0){
+        description+="\n\n"+data.seniorCitizenTickets+" Senior Citizen Tickets."
+    }
+
+    return description;
+}
 
 const locations=['Kochi', 'Bangalore', 'Hyderabad'];
 
@@ -318,7 +349,7 @@ const messages={
     "contactInfo":"Please share your contact information",
     "emailID":"Please share your email ID",
     "paymentLink":(amount, linkForPayment)=>{
-        return "Thank you for the information! Your total cost is: "+amount+" /- Please click on the link below to complete payment.\n\n"+linkForPayment+"\n\nPayment link to be wonderla.stayhalo.in/payment and once the user completes payment they need to be redirected to confirmation message of wonderla.stayhalo.in.\n\nFor any doubts, please refer the flow in https://bookings.wonderla.com/"
+        return "Thank you for the information! Your total cost is: Rs "+amount+" /- Please click on the link below to complete payment.\n\n"+linkForPayment+"\n\nPayment link to be wonderla.stayhalo.in/payment and once the user completes payment they need to be redirected to confirmation message of wonderla.stayhalo.in.\n\nFor any doubts, please refer the flow in https://bookings.wonderla.com/"
     }
 }
 
