@@ -91,6 +91,8 @@ function createRow(values){
 }
 
 async function createWonderlaTicketsInfo(data, chat_id){
+    // TODO: Replace it with actual pricing.
+
     let rowsHtml="";
     rowsHtml+=head3Text("Adult");
     rowsHtml+=normalText("Rs 846.61 Per Ticket.");
