@@ -7,6 +7,7 @@ const replySender = async (data) => {
             data
         )
     } catch (err) {
+        console.log(err);
         throw err
     }
 }
