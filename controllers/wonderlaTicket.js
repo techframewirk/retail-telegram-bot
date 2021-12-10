@@ -207,7 +207,17 @@ const handleBooking = async (cachedData, data) => {
                 
                 replySender({
                     chat_id:data.message.chat.id,
-                    text:messages.contactInfo
+                    text:messages.contactInfo,
+                    reply_markup: {
+                        keyboard: [
+                            [{
+                                "text": "Send Contact",
+                                "request_contact": true
+                            }]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
                 });
             }
             else{
@@ -220,8 +230,7 @@ const handleBooking = async (cachedData, data) => {
         break;
         case steps.contactInfo:
         {
-            //TODO: add the regular expression logic.
-            const phoneNumber=data.message.text;
+            const phoneNumber=data.message.contact.phone_number;
             if(phoneNumber!=undefined){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
@@ -253,7 +262,6 @@ const handleBooking = async (cachedData, data) => {
                     emailId:emailId
                 }));
 
-                // TODO: book ticket.
                 const bookingResponse=await bookTicket({
                     ...cachedData, emailId:emailId
                 });
@@ -368,7 +376,6 @@ const bookTicket=async(bookingData)=>{
         else{
             return null;
         }
-        return null;
     } catch (error) {
         return null;
     }
