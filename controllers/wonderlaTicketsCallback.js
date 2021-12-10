@@ -3,7 +3,6 @@ const replySender=require('./replySender')
 const wonderlaTicketCallBackController=async(req, res, next)=>{
     try {
         replySender(req.body);
-        console.log(req.body);
         res.statusCode=200;
         res.json({
             message:"Successfullly"
