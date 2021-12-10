@@ -6,7 +6,6 @@ const replySender=require('./replySender');
 const replySenderWithImage=require('./replySenderWithImage');
 const tableUtils=require('./../utils/tableUtils');
 const imageUtils=require('./../utils/imageUtils');
-const razorpayUtils=require('./../utils/razorpayUtils');
 
 const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -35,14 +34,15 @@ const handleBooking = async (cachedData, data) => {
         case steps.selectDate:
             const bookingDate=Date.parse(data.message.text);
             if((bookingDate!=undefined)&&(bookingDate!=NaN)){
+                let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.adultRegularTickets,
-                    bookingDate:bookingDate
+                    bookingDate:bookingDate,
+                    pricesInfo:pricesInfo
                 }));
 
-                // Reply sender with this image and then delete it.
-                let imagePath=await tableUtils.createWonderlaTicketsInfo([], data.message.chat.id);
+                let imagePath=await tableUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id);
                 await replySenderWithImage({
                     chat_id:data.message.chat.id,
                     text:messages.adultRegularTickets
@@ -253,29 +253,25 @@ const handleBooking = async (cachedData, data) => {
                     emailId:emailId
                 }));
 
-                // TODO: code to calculate amount from the tickets info.
-                // calculate amount as whole number.
-                // Like for Rs 5 send 500
-                const amount=500;
-                const paymentLinkResponse=await razorpayUtils.createPaymentLink(
-                    amount, cachedData.firstName+" "+cachedData.lastName,
-                    emailId, 
-                    cachedData.contactInfo,
-                    createDescriptionForPaymentLink(cachedData)
-                );
+                // TODO: book ticket.
+                const bookingResponse=await bookTicket({
+                    ...cachedData, emailId:emailId
+                });
 
-                if(paymentLinkResponse!=null){
+                // Add link to response.
+                if(bookingResponse!=null){
                     replySender({
                         chat_id:data.message.chat.id,
-                        text:messages.paymentLink(amount*0.01, paymentLinkResponse.short_url)
+                        text:messages.paymentLink(bookingResponse.paymentURL)
                     });
                 }
                 else{
                     replySender({
-                        chat_id:data.message.chat_id,
-                        text:"Something Went wrong."
+                        chat_id:data.message.chat.id,
+                        text:"Something went wrong..."
                     });
                 }
+
             }
             else{
                 replySender({
@@ -295,25 +291,87 @@ const handleBooking = async (cachedData, data) => {
 //     )
 // }
 
-const createDescriptionForPaymentLink=(data)=>{
-    let description="Please confirm booking by completing the payments for :"
-    if(data.adultRegularTickets>0){
-        description+="\n\n"+data.adultRegularTickets+" Regular Adult Tickets."
-    }
-    if(data.adultFastrackTickets>0){
-        description+="\n\n"+data.adultFastrackTickets+" Fast Track Adult Tickets."
-    }
-    if(data.childRegularTickets>0){
-        description+="\n\n"+data.childRegularTickets+" Regular Child Tickets."
-    }
-    if(data.childFastrackTickets>0){
-        description+="\n\n"+data.childFastrackTickets+" Fast Track Child Tickets."
-    }
-    if(data.seniorCitizenTickets>0){
-        description+="\n\n"+data.seniorCitizenTickets+" Senior Citizen Tickets."
+const getTicketPricing=async (currLocation, bookingDate) => {
+    const bookingDateAsString=(new Date(bookingDate)).toISOString();
+    const response=await axios.get("https://wonderlaapi.stayhalo.in/prices?date="+bookingDateAsString);
+
+    const pricesInfo={};
+    if(response.status!=200){
+        return null;
     }
 
-    return description;
+    response.data.result.forEach((price)=>{
+        if(price.product.location==currLocation){
+            let key="";
+            if(price.product.type=='Regular'){
+                if(price.type=='Adult'){
+                    key=steps.adultRegularTickets;
+                }
+                else if(price.type=='Child'){
+                    key=steps.childRegularTickets;
+                }
+                else if(price.type=='Senior Citizen'){
+                    key=steps.seniorCitizenTickets;
+                }
+            }
+            else{
+                if(price.type=='Adult'){
+                    key=steps.adultFastrackTickets;
+                }
+                else if(price.type=='Child'){
+                    key=steps.childFastrackTickets;
+                }
+            }
+
+
+            pricesInfo[key]={
+                ticket_id:price._id,
+                amount: price.amount
+            }
+        }
+    });
+
+    return pricesInfo;
+}
+
+const bookTicket=async(bookingData)=>{
+    const pricesInfo=bookingData.pricesInfo;
+    const tickets=[];
+    for(let ticketType in pricesInfo){
+        if(bookingData[ticketType]>0){
+            tickets.push({
+                "ticket":pricesInfo[ticketType]["ticket_id"],
+                "count":bookingData[ticketType]
+            });   
+        }
+    }
+
+    const customerData={
+        "firstName":bookingData.firstName,
+        "lastName":bookingData.lastName,
+        "mobile":bookingData.contactInfo,
+        "email":bookingData.emailId,
+        "generateInvoice":true
+    }
+
+    const reqBody={
+        "activityDate":(new Date()).toISOString(),
+        "tickets":tickets,
+        "customer":customerData
+    }
+
+    try {
+        const bookingResponse=await axios.post("https://wonderlaapi.stayhalo.in/bookings", reqBody);
+        if(bookingResponse.status==200){
+            return bookingResponse.data;
+        }  
+        else{
+            return null;
+        }
+        return null;
+    } catch (error) {
+        return null;
+    }
 }
 
 const locations=['Kochi', 'Bangalore', 'Hyderabad'];
@@ -348,8 +406,8 @@ const messages={
     "lastName":"What’s your last name?",
     "contactInfo":"Please share your contact information",
     "emailID":"Please share your email ID",
-    "paymentLink":(amount, linkForPayment)=>{
-        return "Thank you for the information! Your total cost is: Rs "+amount+" /- Please click on the link below to complete payment.\n\n"+linkForPayment+"\n\nPayment link to be wonderla.stayhalo.in/payment and once the user completes payment they need to be redirected to confirmation message of wonderla.stayhalo.in.\n\nFor any doubts, please refer the flow in https://bookings.wonderla.com/"
+    "paymentLink":(linkForPayment)=>{
+        return "Thank you for the information! \nPlease click on the link below to complete payment.\n\n"+linkForPayment+"\n\nPayment link to be wonderla.stayhalo.in/payment and once the user completes payment they need to be redirected to confirmation message of wonderla.stayhalo.in.\n\nFor any doubts, please refer the flow in https://bookings.wonderla.com/"
     }
 }
 

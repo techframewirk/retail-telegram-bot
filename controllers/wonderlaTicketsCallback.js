@@ -5,7 +5,7 @@ const wonderlaTicketCallBackController=async(req, res, next)=>{
         replySender(req.body);
         res.statusCode=200;
         res.json({
-            message:"Successfullly"
+            message:"Successfully"
         });
     } catch (error) {
         console.log(error);

@@ -90,23 +90,23 @@ function createRow(values){
     return row;
 }
 
-async function createWonderlaTicketsInfo(data, chat_id){
-    // TODO: Replace it with actual pricing.
+async function createWonderlaTicketsInfo(pricesInfo, chat_id){
 
     let rowsHtml="";
     rowsHtml+=head3Text("Adult");
-    rowsHtml+=normalText("Rs 846.61 Per Ticket.");
+    rowsHtml+=normalText("Rs "+pricesInfo["adultRegularTickets"]["amount"]+" Per Ticket.");
     rowsHtml+=head3Text("Child");
-    rowsHtml+=normalText("Rs 761.61 Per Ticket.");
+    rowsHtml+=normalText("Rs "+pricesInfo["childRegularTickets"]["amount"]+" Per Ticket.");
     rowsHtml+=head3Text("Senior Citizen");
-    rowsHtml+=normalText("Rs 634.61 Per Ticket.");
+    rowsHtml+=normalText("Rs "+pricesInfo["seniorCitizenTickets"]["amount"]+" Ticket.");
     rowsHtml+=head3Text("Fast Track Adult");
-    rowsHtml+=normalText("Rs 1269.61 Per Ticket.");
+    rowsHtml+=normalText("Rs "+pricesInfo["adultFastrackTickets"]["amount"]+" Per Ticket.");
     rowsHtml+=head3Text("Fast Track Child");
-    rowsHtml+=normalText("Rs 1142.61 Per Ticket.");
+    rowsHtml+=normalText("Rs "+pricesInfo["childFastrackTickets"]["amount"]+" Per Ticket.");
 
     rowsHtml="<div>"+rowsHtml+"</div>"
 
+    // Adjust the size of it.
     let imageFileName=chat_id+"_"+Date.now().toString()+".png";
     let imagePath=path.resolve('public/wonderlaTicketPricing/'+imageFileName);
     let htmlCode=htmlWrap(rowsHtml);
