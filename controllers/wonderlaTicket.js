@@ -4,7 +4,7 @@ const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const replySender=require('./replySender');
 const replySenderWithImage=require('./replySenderWithImage');
-const tableUtils=require('./../utils/tableUtils');
+const ticketUtils=require('./../utils/ticketUtils');
 const imageUtils=require('./../utils/imageUtils');
 
 const handleBooking = async (cachedData, data) => {
@@ -42,7 +42,7 @@ const handleBooking = async (cachedData, data) => {
                     pricesInfo:pricesInfo
                 }));
 
-                let imagePath=await tableUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id);
+                let imagePath=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
                 await replySenderWithImage({
                     chat_id:data.message.chat.id,
                     text:messages.adultRegularTickets
