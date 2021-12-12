@@ -42,7 +42,7 @@ const handleBooking = async (cachedData, data) => {
                     pricesInfo:pricesInfo
                 }));
 
-                let imagePath=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id);
+                let imagePath=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
                 await replySenderWithImage({
                     chat_id:data.message.chat.id,
                     text:messages.adultRegularTickets

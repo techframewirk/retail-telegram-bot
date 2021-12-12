@@ -2,7 +2,7 @@ const nodeHtmlToImage = require('node-html-to-image');
 const imageUtils=require('./imageUtils');
 const path=require('path');
 
-async function createWonderlaTicketsInfo(pricesInfo, chat_id){
+async function createWonderlaTicketsInfo(pricesInfo, chat_id, locationName){
 
     let rowsHtml="";
 
@@ -16,18 +16,10 @@ async function createWonderlaTicketsInfo(pricesInfo, chat_id){
     let imageFileName=chat_id+"_"+Date.now().toString()+".png";
     let imagePath=path.resolve('public/wonderlaTicketPricing/'+imageFileName);
     // ORG Code.
-    let htmlCode=htmlWrap(rowsHtml);
+    let htmlCode=htmlWrap(rowsHtml, locationName);
     
     await imageUtils.createImageFromHtml(imagePath, htmlCode);
     return imagePath;
-}
-
-function head3Text(data){
-    return "<h3>"+data+"</h3><br>";
-}
-
-function normalText(data){
-    return "<div>"+data+"</div><br>";
 }
 
 function ticketPriceDiv(ticketTitle, amount){
@@ -37,7 +29,7 @@ function ticketPriceDiv(ticketTitle, amount){
             "</div>";
 }
 
-function htmlWrap(htmlCode){
+function htmlWrap(htmlCode, locationName){
     return "<!DOCTYPE html>"+
     "<html>"+
         "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">"+
@@ -51,19 +43,17 @@ function htmlWrap(htmlCode){
                 "}"+
                 "body{"+
                     "margin:0;"+
-                    "display: flex"+
                 "}"+
                 "h1{"+
                     "margin:0;"+
                     "padding:0;"+
                 "}"+
                 ".container{"+
-                    "width:100%;"+
                     "background-color: whitesmoke;"+
                     "font-family: 'Roboto', sans-serif;"+
                     "font-weight: 500;"+
-                    "padding: 3%;"+
-                    "padding-bottom:10%;"+
+                    "padding: 53.76px;"+
+                    "padding-bottom: 76.800px;"+
                 "}"+
                 ".heading1{"+
                     "margin:15.36px;"+
@@ -106,7 +96,7 @@ function htmlWrap(htmlCode){
         "</head>"+
         "<body>"+
             '<div class="container">'+
-                "<div class='heading1'>Wonderla Banglore</div>"+
+                "<div class='heading1'>Wonderla "+locationName+"</div>"+
                 "<div class='heading2'>Ticket Prices</div>"+
                 
                 htmlCode+
