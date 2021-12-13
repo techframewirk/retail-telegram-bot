@@ -2,6 +2,10 @@ const axios = require('axios').default
 const validations = require('./validations')
 const redis = require('../utils/redis')
 const db = require('../utils/mongo')
+const FormData=require('form-data')
+const fs=require('fs')
+const replyUtils=require('./../utils/replyUtils');
+const tableUtils=require('./../utils/tableUtils');
 
 const handleMetros=async(cachedData, data)=>{
     switch (cachedData.nextStep) {
@@ -25,6 +29,13 @@ const handleMetros=async(cachedData, data)=>{
             break;
         case metrosSteps.endLocation:
             if(data.message.location!=undefined){
+                //TEMP Code.
+                let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);     
+                replyUtils.replySenderWithImage({
+                    "chat_id":data.message.chat.id,
+                    "text":"Metro Time Table."
+                }, imagePath);
+            
                 //TODO: make an api call 
                 // and reply sender as well.
             }
