@@ -268,6 +268,7 @@ const handleBooking = async (cachedData, data) => {
 
                 // Add link to response.
                 if(bookingResponse!=null){
+                    console.log(bookingResponse);
                     replySender({
                         chat_id:data.message.chat.id,
                         text:messages.paymentLink(bookingResponse.paymentURL)
