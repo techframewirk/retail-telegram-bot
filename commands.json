@@ -16,7 +16,15 @@
         "description": "To Cancel active bookings."
     },
     {
+        "command": "wonderlaticket",
+        "description": "To book Wonderla Ticket"
+    }
+    {
         "command":"metro",
         "description":"To find metros."
+    },
+    {
+        "command": "bookparking",
+        "description": "To book Parking spaces"
     }
 ]

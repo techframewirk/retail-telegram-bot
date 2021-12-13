@@ -5,6 +5,9 @@ const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
 const metros = require('./metros')
 const db = require('../utils/mongo')
+const wonderlaTicket = require('./wonderlaTicket');
+const bookParking = require('./bookParking')
+const replySender=require('./replySender');
 
 const setWebhook = async () => {
     try{
@@ -41,93 +44,123 @@ const setCommands = async () => {
 const webhookController = async (req, res, next) => {
     try{
         const data = req.body
-        console.log(data)
+        console.log(data);
         if(data.message != undefined) {
-            if (typeof (data.message.entities) != 'undefined') {
-                if (data.message.entities[0].type == 'bot_command') {
-                    redis.del(data.message.from.id)
-                    switch (data.message.text) {
-                        case '/bookcabs':
-                            redis.set(data.message.from.id, JSON.stringify({
-                                chat_id: data.message.chat.id,
-                                initiatedCommand: '/bookcabs',
-                                nextStep: 'pickupLocation'
-                            }), (err, reply) => {
-                                if(err) {
-                                    throw err
-                                } else {
-                                    // // Old
-                                    // replySender({
-                                    //     chat_id: data.message.chat.id,
-                                    //     text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
-                                    // })
-
-                                    // New
-                                    replySender({
-                                        chat_id: data.message.chat.id,
-                                        text: "I am glad to book a cab for you!\nWhere do you want to book your ride from?"
-                                    })
+            if ((typeof (data.message.entities) != 'undefined')&&(data.message.entities[0].type == 'bot_command')) {
+                redis.del(data.message.from.id)
+                switch (data.message.text) {
+                    case '/bookcabs':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/bookcabs',
+                            nextStep: 'pickupLocation'
+                        }), (err, reply) => {
+                            if(err) {
+                                throw err
+                            } else {
+                                // // Old
+                                // replySender({
+                                //     chat_id: data.message.chat.id,
+                                //     text: "I am glad to book a cab for you!\nPlease help me by sending the pickup location."
+                                // })
+                                // New
+                                replySender({
+                                    chat_id: data.message.chat.id,
+                                    text: "I am glad to book a cab for you!\nWhere do you want to book your ride from?"
+                                })
+                            }
+                        })
+                        break
+                    case '/cancelbooking':
+                        let activeBookings = []
+                        let activeBookingMessages = []
+                        const activeBookingsCursor = await db.getDB().collection('booked').find({
+                            inProgress: true
+                        })
+                        await activeBookingsCursor.forEach(async (doc) => {
+                            activeBookings.push(doc)
+                        })
+                        activeBookingMessages = activeBookings.map(booking => {
+                            return {
+                                chat_id: booking.chat_id,
+                                text: `Cab Booking\n\nCar:${booking.updateDriver.message.order.trip.vehicle.color} ${booking.updateDriver.message.order.trip.vehicle.variant} - ${booking.updateDriver.message.order.trip.vehicle.registration.number}`,
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{
+                                            text: "Cancel",
+                                            callback_data: `cancelCabBooking-${booking._id}`
+                                        }]
+                                    ],
+                                    "resize_keyboard": true,
+                                    "one_time_keyboard": true
                                 }
-                            })
-                            break
-                        case '/cancelbooking':
-                            let activeBookings = []
-                            let activeBookingMessages = []
-                            const activeBookingsCursor = await db.getDB().collection('booked').find({
-                                inProgress: true
-                            })
-                            await activeBookingsCursor.forEach(async (doc) => {
-                                activeBookings.push(doc)
-                            })
-                            activeBookingMessages = activeBookings.map(booking => {
-                                return {
-                                    chat_id: booking.chat_id,
-                                    text: `Cab Booking\n\nCar:${booking.updateDriver.message.order.trip.vehicle.color} ${booking.updateDriver.message.order.trip.vehicle.variant} - ${booking.updateDriver.message.order.trip.vehicle.registration.number}`,
-                                    reply_markup: {
-                                        inline_keyboard: [
-                                            [{
-                                                text: "Cancel",
-                                                callback_data: `cancelCabBooking-${booking._id}`
-                                            }]
-                                        ],
-                                        "resize_keyboard": true,
-                                        "one_time_keyboard": true
-                                    }
-                                }
-                            })
-                            activeBookingMessages.forEach(async (message) => {
-                                await replySender(message)
-                            })
-                            break
-                        case '/help':
-                            replySender({
-                                "chat_id": data.message.chat.id,
-                                "text": "For any queries please reach out to support@stayhalo.in on Email!"
-                            })
-                            break
-                        case '/aboutus':
-                            replySender({
-                                "chat_id": data.message.chat.id,
-                                "text": "You can avail an array of services from the Kochi Open Mobility Network through StayHalo. Today, you can book taxi rides in Kochi.Next, you will also be able to book water metro rides and view metro schedules.In the days to come, I will help you avail a wider variety of services across the country."
-                            })
-                            break;
-                        case '/metro':
-                            redis.set(data.message.from.id, JSON.stringify({
-                                chat_id: data.message.chat.id,
-                                initiatedCommand: '/metro',
-                                nextStep: 'startLocation'
-                            }), (err, reply) => {
-                                if(err) {
-                                    throw err
-                                } else {
-                                    replySender({
-                                        "chat_id":data.message.chat.id,
-                                        "text":"I am glad to find metros for you!\nPlease help me by sending start location."
-                                    });
-                                }
-                            })
-                            break;
-                    }
+                            }
+                        })
+                        activeBookingMessages.forEach(async (message) => {
+                            await replySender(message)
+                        })
+                        break
+                    case '/help':
+                        replySender({
+                            "chat_id": data.message.chat.id,
+                            "text": "For any queries please reach out to support@stayhalo.in on Email!"
+                        })
+                        break
+                    case '/aboutus':
+                        replySender({
+                            "chat_id": data.message.chat.id,
+                            "text": "You can avail an array of services from the Kochi Open Mobility Network through StayHalo. Today, you can book taxi rides in Kochi.Next, you will also be able to book water metro rides and view metro schedules.In the days to come, I will help you avail a wider variety of services across the country."
+                        })
+                        break
+                    case '/bookparking':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/bookparking',
+                            nextStep: 'booking_location'
+                        }), (err, reply) => {
+                            if(err) {
+                                throw err
+                            } else {
+                                replySender({
+                                    "chat_id": data.message.chat.id,
+                                    "text": "Happy to help! Please share your location where you need parking."
+                                })
+                            }
+                        })
+                        break
+                    case '/wonderlaticket':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/wonderlaticket',
+                            nextStep: wonderlaTicket.steps.selectLocation
+                        }), (err, reply) => {
+                            if(err) {
+                                console.log(err);
+                                throw err
+                            } else {
+                                replySender({
+                                    "chat_id": data.message.chat.id,
+                                    "text": wonderlaTicket.messages.selectLocation
+                                })
+                            }
+                        })
+                    break;
+                    case '/metro':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/metro',
+                            nextStep: 'startLocation'
+                        }), (err, reply) => {
+                            if(err) {
+                                throw err
+                            } else {
+                                replySender({
+                                    "chat_id":data.message.chat.id,
+                                    "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                                });
+                            }
+                        })
+                        break;
                 }
             } else {
                 redis.get(data.message.from.id, async (err, reply) => {
@@ -140,6 +173,7 @@ const webhookController = async (req, res, next) => {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
                                     break
+<<<<<<< HEAD
                                 case '/metro' :
                                     // Org Code.
                                     await metros.handleMetros(cachedData, data);
@@ -148,6 +182,16 @@ const webhookController = async (req, res, next) => {
                                     //     "chat_id":data.message.chat.id,
                                     //     text:"Wait for second developing it.."
                                     // });
+=======
+
+                                case '/wonderlaticket':
+                                    await wonderlaTicket.handleBooking(cachedData, data)
+                                    break;
+                                    
+                                case '/bookparking':
+                                    await bookParking.handleParking(cachedData, data)
+                                    break;
+>>>>>>> 0dab5d52900df0cc425937a6fe472e406251d499
                             }
                         } else {
                             replySender({
@@ -168,6 +212,9 @@ const webhookController = async (req, res, next) => {
                 case 'cancelCabBooking':
                     bookCabs.cancelBooking(data, callbackData)
                     break
+                case 'bookparking':
+                    bookParking.handleCallbackQuery(data, callbackData)
+                    break
             }
         } else {
             console.log("S")
@@ -178,13 +225,6 @@ const webhookController = async (req, res, next) => {
     } catch (err) {
         next(err)
     }
-}
-
-const replySender = async (data) => {
-    const response = await axios.post(
-        `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
-        data
-    )
 }
 
 module.exports = {
