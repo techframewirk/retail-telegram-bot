@@ -1,0 +1,34 @@
+{
+    "context": {
+        "domain": "nic2004:63031",
+        "core_version": "0.9.3",
+        "bpp_id": "35.200.188.6",
+        "bpp_uri": "http://35.200.188.6/rest/V1/beckn/"
+    },
+    "message": {
+        "intent": {
+            "provider": {
+                "locations": [
+                    {
+                        "gps": "9.971237, 76.322221"
+                    }
+                ]
+            },
+            "fulfillment": {
+                "start": {
+                    "time": {
+                        "timestamp": "2021-10-08T09:50:27.784Z"
+                    }
+                },
+                "end": {
+                    "time": {
+                        "timestamp": "2021-10-08T09:50:27.784Z"
+                    },
+                    "location": {
+                        "gps": "9.971237, 76.322221"
+                    }
+                }
+            }
+        }
+    }
+}
