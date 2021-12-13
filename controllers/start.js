@@ -173,16 +173,10 @@ const webhookController = async (req, res, next) => {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
                                     break
-<<<<<<< HEAD
                                 case '/metro' :
                                     // Org Code.
                                     await metros.handleMetros(cachedData, data);
-                                    // // TEMP Code.
-                                    // replySender({
-                                    //     "chat_id":data.message.chat.id,
-                                    //     text:"Wait for second developing it.."
-                                    // });
-=======
+                                    break;
 
                                 case '/wonderlaticket':
                                     await wonderlaTicket.handleBooking(cachedData, data)
@@ -191,7 +185,6 @@ const webhookController = async (req, res, next) => {
                                 case '/bookparking':
                                     await bookParking.handleParking(cachedData, data)
                                     break;
->>>>>>> 0dab5d52900df0cc425937a6fe472e406251d499
                             }
                         } else {
                             replySender({
