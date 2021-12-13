@@ -143,7 +143,7 @@ const webhookController = async (req, res, next) => {
                                 })
                             }
                         })
-                        break
+                    break
                 }
             } else {
                 redis.get(data.message.from.id, async (err, reply) => {
@@ -198,13 +198,6 @@ const webhookController = async (req, res, next) => {
         next(err)
     }
 }
-
-// const replySender = async (data) => {
-//     const response = await axios.post(
-//         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
-//         data
-//     )
-// }
 
 module.exports = {
     setWebhook,
