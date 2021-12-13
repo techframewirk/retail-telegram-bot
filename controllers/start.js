@@ -4,7 +4,9 @@ const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
 const db = require('../utils/mongo')
+const wonderlaTicket = require('./wonderlaTicket');
 const bookParking = require('./bookParking')
+const replySender=require('./replySender');
 
 const setWebhook = async () => {
     try{
@@ -41,7 +43,7 @@ const setCommands = async () => {
 const webhookController = async (req, res, next) => {
     try{
         const data = req.body
-        console.log(data)
+        console.log(data);
         if(data.message != undefined) {
             if ((typeof (data.message.entities) != 'undefined')&&(data.message.entities[0].type == 'bot_command')) {
                 redis.del(data.message.from.id)
@@ -125,6 +127,23 @@ const webhookController = async (req, res, next) => {
                             }
                         })
                         break
+                    case '/wonderlaticket':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/wonderlaticket',
+                            nextStep: wonderlaTicket.steps.selectLocation
+                        }), (err, reply) => {
+                            if(err) {
+                                console.log(err);
+                                throw err
+                            } else {
+                                replySender({
+                                    "chat_id": data.message.chat.id,
+                                    "text": wonderlaTicket.messages.selectLocation
+                                })
+                            }
+                        })
+                    break
                 }
             } else {
                 redis.get(data.message.from.id, async (err, reply) => {
@@ -137,9 +156,14 @@ const webhookController = async (req, res, next) => {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
                                     break
+
+                                case '/wonderlaticket':
+                                    await wonderlaTicket.handleBooking(cachedData, data)
+                                    break;
+                                    
                                 case '/bookparking':
                                     await bookParking.handleParking(cachedData, data)
-                                    break
+                                    break;
                             }
                         } else {
                             replySender({
@@ -173,13 +197,6 @@ const webhookController = async (req, res, next) => {
     } catch (err) {
         next(err)
     }
-}
-
-const replySender = async (data) => {
-    const response = await axios.post(
-        `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
-        data
-    )
 }
 
 module.exports = {
