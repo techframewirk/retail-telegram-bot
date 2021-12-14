@@ -1,11 +1,11 @@
 const db = require('../utils/mongo')
 const axios = require('axios').default
 const redis = require('../utils/redis')
+const replySender=require('./replySender');
 
 const callBackController = async (req, res, next) => {
     try{
         const data = req.body
-        console.log(data);
         await db.getDB().collection('callbacks').insertOne(data)
         switch(data.context.action) {
             case 'on_search':
@@ -13,15 +13,17 @@ const callBackController = async (req, res, next) => {
                     message_id: data.context.message_id,
                     isResolved: false
                 })
+
                 if(savedData != null) {
-                    await db.getDB().collection('ongoing').updateOne({
-                        _id: savedData._id
-                    }, {
-                        $set: {
-                            onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
-                        }
-                    })
-                    if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
+                    if (checkType(data.message.catalog['bpp/providers'], 'pinpark')) {
+                        await db.getDB().collection('ongoing').updateOne({
+                            _id: savedData._id
+                        }, {
+                            $set: {
+                                onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
+                            }
+                        });
+                        
                         const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
                         let parkingSpaces = resultDocument.items.map(item => {
                             return {
@@ -51,7 +53,47 @@ const callBackController = async (req, res, next) => {
                                 parkingLocations: data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark').items
                             }
                         })
-                    } else {
+                    } 
+                    else if(checkType(data.message.catalog['bpp/providers'], 'KMRL')){
+
+                        // TODO: use the savedData for extraction and table creation.
+
+                        // TEMP Code for testing.
+                        replySender({
+                            chat_id:savedData.chat_id,
+                            text:JSON.stringify(data.message.catalog['bpp/providers'][0].locations)
+                        });
+
+
+                        // let lstTimeValue;
+                        // data.message.catalog['bpp/providers'].forEach((info) => {
+                        //     info.items.forEach((item) => {
+                        //         item.stops.forEach((stopInfo)=>{
+                        //             stopInfo.time.schedule.times.forEach((timeValue)=>{
+                        //                 let currTime=new Date(timeValue);
+                        //                 if(lstTimeValue!=currTime){
+                        //                     console.log(currTime.toString());
+                        //                     lstTimeValue=currTime;
+                        //                 }
+                        //             });
+                        //         });
+                        //     });
+                        // });
+
+                        // data.message.catalog['bpp/providers'].forEach((info)=>{
+                        //     console.log(info.items[0].stops[0]);
+                        //     console.log(info.items[0].stops[0].time);
+                        // });
+                    }
+                    else {
+                        await db.getDB().collection('ongoing').updateOne({
+                            _id: savedData._id
+                        }, {
+                            $set: {
+                                onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
+                            }
+                        });
+                        
                         let cabs = []
                         data.message.catalog.items.forEach(cabData => {
                             cabs.push({
@@ -138,11 +180,22 @@ const callBackController = async (req, res, next) => {
     }
 }
 
-const replySender = async (data) => {
-    const response = await axios.post(
-        `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
-        data
-    )
+const checkType= (providersData, typeName)=>{
+    let isofSameType=false;
+    providersData.forEach((providerData) => {
+        if(providerData.id==typeName){
+            isofSameType=true;
+        }
+    });
+
+    return isofSameType
 }
+
+// const replySender = async (data) => {
+//     const response = await axios.post(
+//         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
+//         data
+//     )
+// }
 
 module.exports = callBackController
