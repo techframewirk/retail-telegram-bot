@@ -6,6 +6,7 @@ const replySender=require('./replySender');
 const replySenderWithImage=require('./replySenderWithImage');
 const ticketUtils=require('./../utils/ticketUtils');
 const imageUtils=require('./../utils/imageUtils');
+const dateTimeUtils=require('./../utils/dateTime');
 
 const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -32,8 +33,16 @@ const handleBooking = async (cachedData, data) => {
         break;
 
         case steps.selectDate:
-            const bookingDate=Date.parse(data.message.text);
-            if((bookingDate!=undefined)&&(bookingDate!=NaN)){
+            let bookingDate=null; 
+            try {
+                if(dateTimeUtils.validate(data.message.text)){
+                    bookingDate=Date.parse(data.message.text);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+            
+            if((bookingDate!=null)&&(bookingDate!=NaN)){
                 let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
@@ -53,7 +62,7 @@ const handleBooking = async (cachedData, data) => {
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Invalid Date Format. Please try again!"
-                });
+                });   
             }
         break;
 
@@ -253,9 +262,17 @@ const handleBooking = async (cachedData, data) => {
         break;
         case steps.emailID:
         {
-            //TODO: add the regular expression logic.
+            let isEmailThere=false;
+            if(typeof (data.message.entities) != 'undefined'){
+                data.message.entities.forEach(entity => {
+                    if(entity.type=='email'){
+                        isEmailThere=true;
+                    }
+                });
+            }
+
             const emailId=data.message.text;
-            if(emailId!=undefined){
+            if((emailId!=undefined)&&(isEmailThere)){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.paymentLink,
@@ -267,7 +284,7 @@ const handleBooking = async (cachedData, data) => {
                 });
 
                 // Add link to response.
-                if(bookingResponse!=null){
+                if((bookingResponse!=null)&&(bookingResponse.success)){
                     console.log(bookingResponse);
                     replySender({
                         chat_id:data.message.chat.id,
@@ -402,7 +419,7 @@ const steps={
 
 const messages={
     "wonderlaTicket":"Some welcome message.",
-    "selectLocation":"Select Location: \n1. Kochi\n2.Bangalore\n3.Hyderabad\nEnter the number assigned to your desired loction.",
+    "selectLocation":"Select Location: \n1. Kochi\n2.Bangalore\n3.Hyderabad\nEnter the number assigned to your desired location.",
     "selectDate":"Please enter the date for tickets in the given format.\nMM.DD.YYYY",
     "adultRegularTickets":"How many Adult - regular tickets would you like to book?",
     "adultFastrackTickets":"How many Adult - fastrack tickets would you like to book?",
