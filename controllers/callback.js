@@ -5,6 +5,7 @@ const redis = require('../utils/redis')
 const callBackController = async (req, res, next) => {
     try{
         const data = req.body
+        console.log(data);
         await db.getDB().collection('callbacks').insertOne(data)
         switch(data.context.action) {
             case 'on_search':
