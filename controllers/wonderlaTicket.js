@@ -32,7 +32,14 @@ const handleBooking = async (cachedData, data) => {
         break;
 
         case steps.selectDate:
-            const bookingDate=Date.parse(data.message.text);
+            let bookingDate; 
+            try {
+                bookingDate=Date.parse(data.message.text);
+                
+            } catch (error) {
+                console.log(error);
+            }
+            
             if((bookingDate!=undefined)&&(bookingDate!=NaN)){
                 let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
                 redis.set(data.message.chat.id, JSON.stringify({ 
@@ -42,7 +49,9 @@ const handleBooking = async (cachedData, data) => {
                     pricesInfo:pricesInfo
                 }));
 
+                console.log("Creating Image...");
                 let imagePath=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
+                console.log(imagePath);
                 await replySenderWithImage({
                     chat_id:data.message.chat.id,
                     text:messages.adultRegularTickets
@@ -53,7 +62,7 @@ const handleBooking = async (cachedData, data) => {
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Invalid Date Format. Please try again!"
-                });
+                });   
             }
         break;
 
