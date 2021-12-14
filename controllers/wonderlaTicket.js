@@ -238,9 +238,9 @@ const handleBooking = async (cachedData, data) => {
         }
         break;
         case steps.contactInfo:
-        {
-            const phoneNumber=data.message.contact.phone_number;
-            if(phoneNumber!=undefined){
+        {   
+            if((data.message.contact!=undefined)&&(data.message.contact!=null)&&(data.message.contact.phone_number!=undefined)&&(data.message.contact.phone_number!=null)){
+                const phoneNumber=data.message.contact.phone_number;
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.emailID,
@@ -254,8 +254,18 @@ const handleBooking = async (cachedData, data) => {
             }
             else{
                 replySender({
-                    chat_id: data.message.chat.id,
-                    text: "Doesn't look like your phone number.\nPlease enter your name."
+                    chat_id:data.message.chat.id,
+                    text:"It doesn't look like your contact. \nTry once again.",
+                    reply_markup: {
+                        keyboard: [
+                            [{
+                                "text": "Send Contact",
+                                "request_contact": true
+                            }]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
                 });
             }
         }
