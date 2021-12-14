@@ -253,9 +253,17 @@ const handleBooking = async (cachedData, data) => {
         break;
         case steps.emailID:
         {
-            //TODO: add the regular expression logic.
+            let isEmailThere=false;
+            if(typeof (data.message.entities) != 'undefined'){
+                data.message.entities.forEach(entity => {
+                    if(entity.type=='email'){
+                        isEmailThere=true;
+                    }
+                });
+            }
+
             const emailId=data.message.text;
-            if(emailId!=undefined){
+            if((emailId!=undefined)&&(isEmailThere)){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.paymentLink,
@@ -267,7 +275,7 @@ const handleBooking = async (cachedData, data) => {
                 });
 
                 // Add link to response.
-                if(bookingResponse!=null){
+                if((bookingResponse!=null)&&(bookingResponse.success)){
                     console.log(bookingResponse);
                     replySender({
                         chat_id:data.message.chat.id,
