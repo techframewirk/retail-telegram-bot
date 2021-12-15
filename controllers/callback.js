@@ -20,10 +20,9 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
-                    
-                    // TODO: create a function to get providers of particular type.
-                    if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
-                        const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
+                
+                    if(getProviders(data, 'pinpark').length>0){
+                        const resultDocument = getProviders(data, 'pinpark');
                         let parkingSpaces = resultDocument.items.map(item => {
                             return {
                                 chat_id: savedData.chat_id,
@@ -52,7 +51,11 @@ const callBackController = async (req, res, next) => {
                                 parkingLocations: data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark').items
                             }
                         })
-                    } else {
+                    }
+                    else if(getProviders(data, 'KMRL').length>0){
+                        console.log(getProviders(data, 'KMRL'));
+                    }
+                    else {
                         let cabs = []
                         data.message.catalog.items.forEach(cabData => {
                             cabs.push({
@@ -75,7 +78,12 @@ const callBackController = async (req, res, next) => {
                         })
                     }
                 } else {
-                    console.log('Cab Already Booked!')
+                    if(getProviders(data, 'KMRL').length>0){
+                        console.log(getProviders(data, 'KMRL'));
+                    }
+                    else{
+                        console.log('Cab Already Booked!')
+                    }
                 }
                 break
             case 'on_confirm':
@@ -144,6 +152,21 @@ const replySender = async (data) => {
         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
         data
     )
+}
+
+const getProviders=(data, typeName)=>{
+    if(data.message.catalog['bpp/providers']==undefined){
+        return [];
+    }
+
+    let providersData=[];
+    data.message.catalog['bpp/providers'].forEach(providerData => {
+        if(providerData.id==typeName){
+            providersData.push(providerData);
+        }
+    });
+
+    return providersData;
 }
 
 module.exports = callBackController
