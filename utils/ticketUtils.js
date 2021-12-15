@@ -1,4 +1,3 @@
-const nodeHtmlToImage = require('node-html-to-image');
 const imageUtils=require('./imageUtils');
 const path=require('path');
 
@@ -12,14 +11,19 @@ async function createWonderlaTicketsInfo(pricesInfo, chat_id, locationName){
     rowsHtml+=ticketPriceDiv("Fast Track Adult", pricesInfo["adultFastrackTickets"]["amount"]);
     rowsHtml+=ticketPriceDiv("Fast Track Child", pricesInfo["childFastrackTickets"]["amount"]);
 
-    // Adjust the size of it.
-    let imageFileName=chat_id+"_"+Date.now().toString()+".png";
-    let imagePath=path.resolve('public/wonderlaTicketPricing/'+imageFileName);
-    // ORG Code.
-    let htmlCode=htmlWrap(rowsHtml, locationName);
+    // // OLD Code.
+    // // Adjust the size of it.
+    // let imageFileName=chat_id+"_"+Date.now().toString()+".png";
+    // let imagePath=path.resolve('public/wonderlaTicketPricing/'+imageFileName);
+    // let htmlCode=htmlWrap(rowsHtml, locationName);
     
-    await imageUtils.createImageFromHtml(imagePath, htmlCode);
-    return imagePath;
+    // await imageUtils.createImageFromHtml(imagePath, htmlCode);
+    // imageUtils.puppeteerTest(htmlCode)
+    // return imagePath;
+
+    // New Code.
+    let htmlCode=htmlWrap(rowsHtml, locationName);
+    return imageUtils.getImageBuffer(htmlCode);
 }
 
 function ticketPriceDiv(ticketTitle, amount){

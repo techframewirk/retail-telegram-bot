@@ -52,13 +52,19 @@ const handleBooking = async (cachedData, data) => {
                 }));
 
                 console.log("Creating Image...");
-                let imagePath=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
-                console.log(imagePath);
-                await replySenderWithImage({
-                    chat_id:data.message.chat.id,
-                    text:messages.adultRegularTickets
-                }, imagePath);
-                await imageUtils.deleteImage(imagePath);
+                let imageBuffer=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
+                if(imageBuffer!=null){
+                    await replySenderWithImage({
+                        chat_id:data.message.chat.id,
+                        text:messages.adultRegularTickets
+                    }, imageBuffer);
+                }
+                else{
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: "Something went wrong."
+                    });   
+                }
             }
             else{
                 replySender({

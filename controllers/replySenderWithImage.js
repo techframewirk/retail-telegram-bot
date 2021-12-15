@@ -14,4 +14,22 @@ const replySenderWithImage= async (data, photoUri)=>{
     // imageUtils.deleteImage(photoUri);
 }
 
-module.exports=replySenderWithImage
+const replySenderWithBufferImage=async(data, imageBuffer)=>{
+    try {
+        
+        const url=`${process.env.telegramURL}/bot${process.env.telegramToken}/sendPhoto`;
+        const formData = new FormData();
+        formData.append('chat_id', data.chat_id);
+        formData.append('caption', data.text);
+        formData.append("photo", imageBuffer, {
+            filename:'image.png'
+        });
+        await formData.submit(url);
+        console.log("Sent...");
+    } catch (error) {
+        console.log(error);        
+    }
+
+}
+
+module.exports=replySenderWithBufferImage

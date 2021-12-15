@@ -1,34 +1,56 @@
-const nodeHtmlToImage = require('node-html-to-image');
-const htmlToImage=require('html-to-image');
 const fs=require('fs');
 const path=require('path');
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
+const puppeteer=require('puppeteer');
 
-async function createImageFromHtml(imagePath, htmlCode){
+// Old One
+// async function createImageFromHtml(imagePath, htmlCode){
+//     try {
+//         await nodeHtmlToImage({
+//             output:path.resolve(imagePath), html: htmlCode
+//         });
+//     } catch (error) {
+//         console.log(error);
+//     }
+
+//     // const dom = new JSDOM(htmlCode);
+
+//     // htmlToImage.toPng(htmlObj)
+//     // .then(function (dataUrl) {
+//     //     console.log(dataUrl);
+//     // //   download(dataUrl, path.resolve(imagePath));
+//     // }).catch((err)=>{
+//     //     console.log(err);
+//     // });
+// }
+
+async function getImageBuffer(htmlCode){
     try {
-        await nodeHtmlToImage({
-            output:path.resolve(imagePath), html: htmlCode
-        });
+        const browser = await puppeteer.launch({headless: false});
+        const page = await browser.newPage();
+
+        await page.setContent(htmlCode);
+
+        const content = await page.$("html");
+        const imageBuffer = await content.screenshot({ omitBackground: true });
+
+        await page.close();
+        await browser.close();
+
+        return imageBuffer;
     } catch (error) {
-        console.log(error);
+        console.log(error)
+        return null;
     }
-
-    // const dom = new JSDOM(htmlCode);
-
-    // htmlToImage.toPng(htmlObj)
-    // .then(function (dataUrl) {
-    //     console.log(dataUrl);
-    // //   download(dataUrl, path.resolve(imagePath));
-    // }).catch((err)=>{
-    //     console.log(err);
-    // });
 }
 
 async function deleteImage(imagePath){
-    fs.unlinkSync(path.resolve(imagePath));
+    try {
+        fs.unlinkSync(path.resolve(imagePath));
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 module.exports={
-    createImageFromHtml, deleteImage
+     deleteImage, getImageBuffer 
 }
