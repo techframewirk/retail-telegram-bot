@@ -53,7 +53,11 @@ const callBackController = async (req, res, next) => {
                         })
                     }
                     else if(getProviders(data, 'KMRL').length>0){
-                        console.log(getProviders(data, 'KMRL'));
+                        const kmrlProviders=getProviders(data, 'KMRL');
+                        kmrlProviders.forEach((providerData)=>{
+                            // TODO pass the got from saved data.
+                            createDataFroKMRL(providerData, Date.now());
+                        });
                         
                         // TODO: use the savedData for extraction and table creation.
 
@@ -108,7 +112,15 @@ const callBackController = async (req, res, next) => {
                     }
                 } else {
                     if(getProviders(data, 'KMRL').length>0){
-                        console.log(getProviders(data, 'KMRL'));
+                        // TEMP for data creation.
+                        let ticketTables=[];
+                        const kmrlProviders=getProviders(data, 'KMRL');
+                        kmrlProviders.forEach((providerData)=>{
+                            ticketTables=[
+                                ...ticketTables,
+                                ...createDataFroKMRL(providerData, Date.now())
+                            ];
+                        });
                     }
                     else{
                         console.log('Cab Already Booked!')
@@ -181,6 +193,53 @@ const replySender = async (data) => {
         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
         data
     )
+}
+
+const createDataFroKMRL=(data, timeStamp)=>{
+    const locationsMap={};
+    data.locations.forEach(locationData => {
+        locationsMap[locationData.id]=locationData;
+    });
+
+    // Each item will provide a ticket.
+    const ticketTables=[];
+    data.items.forEach(itemData => {
+        // Each Row Will consist of 
+        // Name, price, start, end, departure time, arrival time.
+        const ticketTable={
+            ticket_id:itemData.id,
+            rows:[]
+        };
+        
+        const tableRows=[];
+        let start_IndexForTimeStamp=0;
+        const startStopData=itemData.stops[0];
+        const endStopData=itemData.stops[itemData.stops.length-1];
+
+        for(let i=0; i<startStopData.time.schedule.times.length; i++){
+            const timeValue=new Date(startStopData.time.schedule.times[i]);
+            if(timeValue>timeStamp){
+                start_IndexForTimeStamp=i;
+                break;
+            }
+        }
+
+        for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+20); i++){
+            tableRows.push({
+                name:itemData.descriptor.name,
+                start: locationsMap[startStopData.id].descriptor.name,
+                end: locationsMap[endStopData.id].descriptor.name,
+                departure_time:startStopData.time.schedule.times[i],
+                arrival_time:endStopData.time.schedule.times[i],
+                price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value
+            });
+        }
+
+        ticketTable.rows=tableRows;
+        ticketTables.push(ticketTable);
+    });
+
+    return ticketTables;
 }
 
 const getProviders=(data, typeName)=>{

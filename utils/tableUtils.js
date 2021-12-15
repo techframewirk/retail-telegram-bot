@@ -1,4 +1,3 @@
-const nodeHtmlToImage = require('node-html-to-image');
 const imageUtils=require('./imageUtils');
 
 // This function will return the image path.
@@ -45,11 +44,12 @@ async function createMetroTimeTable(data, chat_id){
         "name", "departsAt", "arrivesAt", "fair"
     ];
 
-    let imageFileName=chat_id+"_"+Date.now().toString()+".png";
-    let imagePath=timeTablesFolderPath+'/'+imageFileName;
-    let tableHtmlCode=htmlWrap(createTable(tempData, columns, keys));
-    await imageUtils.createImageFromHtml(imagePath, tableHtmlCode);
-    return imagePath;
+    // // OLD Code
+    // let imageFileName=chat_id+"_"+Date.now().toString()+".png";
+    // let imagePath=timeTablesFolderPath+'/'+imageFileName;
+    // let tableHtmlCode=htmlWrap(createTable(tempData, columns, keys));
+    // await imageUtils.createImageFromHtml(imagePath, tableHtmlCode);
+    // return imagePath;
 }
 
 function createTable(data, columns, keys){
