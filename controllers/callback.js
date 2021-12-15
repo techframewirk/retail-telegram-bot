@@ -20,6 +20,8 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
+                    
+                    // TODO: create a function to get providers of particular type.
                     if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
                         const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
                         let parkingSpaces = resultDocument.items.map(item => {
