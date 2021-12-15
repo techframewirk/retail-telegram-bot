@@ -1,6 +1,8 @@
 const db = require('../utils/mongo')
 const axios = require('axios').default
 const redis = require('../utils/redis')
+const tableUtils=require('./../utils/tableUtils')
+const replySenderWithImagge=require('./replySenderWithImage')
 
 const callBackController = async (req, res, next) => {
     try{
@@ -53,40 +55,23 @@ const callBackController = async (req, res, next) => {
                         })
                     }
                     else if(getProviders(data, 'KMRL').length>0){
+                        let ticketTables=[];
                         const kmrlProviders=getProviders(data, 'KMRL');
                         kmrlProviders.forEach((providerData)=>{
-                            // TODO pass the got from saved data.
-                            createDataFroKMRL(providerData, Date.now());
-                        });
-                        
-                        // TODO: use the savedData for extraction and table creation.
-
-                        // TEMP Code for testing.
-                        replySender({
-                            chat_id:savedData.chat_id,
-                            text:JSON.stringify(data.message.catalog['bpp/providers'][0].locations)
+                            ticketTables=[
+                                ...ticketTables,
+                                ...createDataFroKMRL(providerData, savedData.timeStamp)
+                            ];
                         });
 
-
-                        // let lstTimeValue;
-                        // data.message.catalog['bpp/providers'].forEach((info) => {
-                        //     info.items.forEach((item) => {
-                        //         item.stops.forEach((stopInfo)=>{
-                        //             stopInfo.time.schedule.times.forEach((timeValue)=>{
-                        //                 let currTime=new Date(timeValue);
-                        //                 if(lstTimeValue!=currTime){
-                        //                     console.log(currTime.toString());
-                        //                     lstTimeValue=currTime;
-                        //                 }
-                        //             });
-                        //         });
-                        //     });
-                        // });
-
-                        // data.message.catalog['bpp/providers'].forEach((info)=>{
-                        //     console.log(info.items[0].stops[0]);
-                        //     console.log(info.items[0].stops[0].time);
-                        // });
+                        const chat_id=savedData.chat_id;
+                        ticketTables.forEach(async (ticketData)=>{
+                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData.rows);
+                            replySenderWithImagge({
+                                chat_id:chat_id, 
+                                text: ticketData.route_name,
+                            }, imageBuffer);
+                        });
                     }
                     else {
                         let cabs = []
@@ -120,6 +105,15 @@ const callBackController = async (req, res, next) => {
                                 ...ticketTables,
                                 ...createDataFroKMRL(providerData, Date.now())
                             ];
+                        });
+
+                        let testChatId=1005284227;
+                        ticketTables.forEach(async (ticketData)=>{
+                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData.rows);
+                            replySenderWithImagge({
+                                chat_id:testChatId, 
+                                text: "Test ticket",
+                            }, imageBuffer);
                         });
                     }
                     else{
@@ -208,6 +202,7 @@ const createDataFroKMRL=(data, timeStamp)=>{
         // Name, price, start, end, departure time, arrival time.
         const ticketTable={
             ticket_id:itemData.id,
+            route_name:itemData.descriptor.name,
             rows:[]
         };
         
@@ -229,8 +224,8 @@ const createDataFroKMRL=(data, timeStamp)=>{
                 name:itemData.descriptor.name,
                 start: locationsMap[startStopData.id].descriptor.name,
                 end: locationsMap[endStopData.id].descriptor.name,
-                departure_time:startStopData.time.schedule.times[i],
-                arrival_time:endStopData.time.schedule.times[i],
+                departure_time: (new Date(startStopData.time.schedule.times[i])).toLocaleTimeString() ,
+                arrival_time: (new Date(endStopData.time.schedule.times[i])).toLocaleTimeString(),
                 price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value
             });
         }

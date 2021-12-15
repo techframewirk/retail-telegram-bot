@@ -1,59 +1,21 @@
 const imageUtils=require('./imageUtils');
 
 // This function will return the image path.
-async function createMetroTimeTable(data, chat_id){
+async function createMetroTimeTable(data){
     
-    // TODO: replace it with data from API. 
-    let tempData=[
-        {
-            "name":"Coachin Red Lines",
-            "departsAt": "7:30 am", 
-            "arrivesAt": "7:45 am",
-            "fair":"Rs 20"
-        },
-        {
-            "name":"Coachin Blue Lines",
-            "departsAt": "8:30 am", 
-            "arrivesAt": "8:45 am",
-            "fair":"Rs 20"
-        },
-        {
-            "name":"Coachin Green Line",
-            "departsAt": "9:30 am", 
-            "arrivesAt": "9:45 am",
-            "fair":"Rs 20"
-        },
-        {
-            "name":"Coachin Yellow Line",
-            "departsAt": "10:30 am", 
-            "arrivesAt": "10:45 am",
-            "fair":"Rs 20"
-        },
-        {
-            "name":"Coachin Purple Line",
-            "departsAt": "11:30 am", 
-            "arrivesAt": "11:45 am",
-            "fair":"Rs 20"
-        }
-    ];
-
     let columns=[
-        "Name", "Departure Time", "Arrival Time", "Fair"
+        "Route Name", "Origin", "Destination", "Departure Time", "Arrival Time", "Price"
     ];
     let keys=[
-        "name", "departsAt", "arrivesAt", "fair"
+        "name", "start", "end", "departure_time", 'arrival_time', 'price'
     ];
 
-    // // OLD Code
-    // let imageFileName=chat_id+"_"+Date.now().toString()+".png";
-    // let imagePath=timeTablesFolderPath+'/'+imageFileName;
-    // let tableHtmlCode=htmlWrap(createTable(tempData, columns, keys));
-    // await imageUtils.createImageFromHtml(imagePath, tableHtmlCode);
-    // return imagePath;
+    let tableHtmlCode=htmlWrap(createTable(data, columns, keys));
+    const imageBuffer=await imageUtils.getImageBuffer(tableHtmlCode);
+    return imageBuffer;
 }
 
 function createTable(data, columns, keys){
-    console.log(columns);
     let tableHeaders=createHeaders(columns);
     let rowsHtml="";
     rowsHtml+=tableHeaders;
