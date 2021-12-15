@@ -25,7 +25,6 @@ const replySenderWithBufferImage=async(data, imageBuffer)=>{
             filename:'image.png'
         });
         await formData.submit(url);
-        console.log("Sent...");
     } catch (error) {
         console.log(error);        
     }
