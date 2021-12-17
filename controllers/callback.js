@@ -66,12 +66,15 @@ const callBackController = async (req, res, next) => {
 
                         const chat_id=savedData.chat_id;
                         ticketTables.forEach(async (ticketData)=>{
-                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData.rows);
+                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData);
                             replySenderWithImagge({
                                 chat_id:chat_id, 
                                 text: ticketData.route_name,
                             }, imageBuffer);
+                            
+                            console.log(JSON.stringify(ticketData));
                         });
+
                     }
                     else {
                         let cabs = []
@@ -97,24 +100,7 @@ const callBackController = async (req, res, next) => {
                     }
                 } else {
                     if(getProviders(data, 'KMRL').length>0){
-                        // TEMP for data creation.
-                        let ticketTables=[];
-                        const kmrlProviders=getProviders(data, 'KMRL');
-                        kmrlProviders.forEach((providerData)=>{
-                            ticketTables=[
-                                ...ticketTables,
-                                ...createDataFroKMRL(providerData, Date.now())
-                            ];
-                        });
 
-                        let testChatId=1005284227;
-                        ticketTables.forEach(async (ticketData)=>{
-                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData.rows);
-                            replySenderWithImagge({
-                                chat_id:testChatId, 
-                                text: "Test ticket",
-                            }, imageBuffer);
-                        });
                     }
                     else{
                         console.log('Cab Already Booked!')
@@ -203,6 +189,7 @@ const createDataFroKMRL=(data, timeStamp)=>{
         const ticketTable={
             ticket_id:itemData.id,
             route_name:itemData.descriptor.name,
+            price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value,
             rows:[]
         };
         
@@ -219,14 +206,10 @@ const createDataFroKMRL=(data, timeStamp)=>{
             }
         }
 
-        for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+20); i++){
+        for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+10); i++){
             tableRows.push({
-                name:itemData.descriptor.name,
-                start: locationsMap[startStopData.id].descriptor.name,
-                end: locationsMap[endStopData.id].descriptor.name,
                 departure_time: (new Date(startStopData.time.schedule.times[i])).toLocaleTimeString() ,
                 arrival_time: (new Date(endStopData.time.schedule.times[i])).toLocaleTimeString(),
-                price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value
             });
         }
 

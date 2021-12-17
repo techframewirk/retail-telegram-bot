@@ -35,13 +35,6 @@ const handleMetros=async(cachedData, data)=>{
                 cachedData[metrosSteps.endLocation]=`${data.message.location.latitude}, ${data.message.location.longitude}`;
                 redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
                 
-                //TEMP Code.
-                // let imagePath=await tableUtils.createMetroTimeTable([], data.message.chat.id);     
-                // replySenderWithImage({
-                //     "chat_id":data.message.chat.id,
-                //     "text":"Metro Time Table."
-                // }, imagePath);
-            
                 // ORG Code.
                 const searchResponse=await searchForMetros(updateCachedData[metrosSteps.startLocation], updateCachedData[metrosSteps.endLocation]);
                 if(searchResponse!=null){
