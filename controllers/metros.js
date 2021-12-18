@@ -82,25 +82,26 @@ const searchForMetros=async (startLocation, endLocation)=>{
                 "fulfillment": {
                     "start" : {
                         "location" : {
-                            // // ORG Code.
-                            // "gps" : startLocation
+                            // ORG Code.
+                            "gps" : startLocation
                             
                             // // TEMP Code 1.
                             // "gps" : "10.109289, 76.349601"
                             
-                            // TEMP Code 2.
-                            "gps":"10.054072, 76.312286"
+                            // // TEMP Code 2.
+                            // "gps":"10.054072, 76.312286"
                         }
                     },
                     "end" : {
                         "location" : {
-                            // // ORG Code.
-                            // "gps" : endLocation
+                            // ORG Code.
+                            "gps" : endLocation
                             
                             // // TEMP Code.
                             // "gps" : "10.087307, 76.342809",
 
-                            "gps":"9.853153, 76.272083"
+                            // // TEMP Code 2.
+                            // "gps":"9.853153, 76.272083"
                         }
                     }
                 }

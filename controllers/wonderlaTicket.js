@@ -255,6 +255,8 @@ const handleBooking = async (cachedData, data) => {
                     contactInfo:phoneNumber
                 }));
 
+                console.log(data.message.contact);
+
                 replySender({
                     chat_id:data.message.chat.id,
                     text:messages.emailID
@@ -403,6 +405,8 @@ const bookTicket=async(bookingData)=>{
         "tickets":tickets,
         "customer":customerData
     }
+
+    // console.log(reqBody);
 
     try {
         const bookingResponse=await axios.post("https://wonderlaapi.stayhalo.in/bookings", reqBody);

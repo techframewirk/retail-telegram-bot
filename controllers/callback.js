@@ -71,8 +71,6 @@ const callBackController = async (req, res, next) => {
                                 chat_id:chat_id, 
                                 text: ticketData.route_name,
                             }, imageBuffer);
-                            
-                            console.log(JSON.stringify(ticketData));
                         });
 
                     }
