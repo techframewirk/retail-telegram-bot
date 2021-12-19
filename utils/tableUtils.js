@@ -179,7 +179,7 @@ function htmlWrap(title, price, time, rows){
             '<div class="box-destination">'+
                 '<div class="destination">'+title+'</div>'+
                 '<div class="flex-box">'+
-                    '<div class="flex-child"><span>Fair:</span> '+price+'</div>'+
+                    '<div class="flex-child"><span>Fare:</span> '+price+'</div>'+
                     '<div class="flex-mid"></div>'+
                     '<div class="flex-child"><span>Time:</span> '+time+' mins</div>'+
                 '</div>'+
