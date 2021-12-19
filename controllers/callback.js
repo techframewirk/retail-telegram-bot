@@ -2,7 +2,7 @@ const db = require('../utils/mongo')
 const axios = require('axios').default
 const redis = require('../utils/redis')
 const tableUtils=require('./../utils/tableUtils')
-const replySenderWithImagge=require('./replySenderWithImage')
+const replySenderWithImage=require('./replySenderWithImage')
 
 const callBackController = async (req, res, next) => {
     try{
@@ -66,8 +66,9 @@ const callBackController = async (req, res, next) => {
 
                         const chat_id=savedData.chat_id;
                         ticketTables.forEach(async (ticketData)=>{
+                            // ORG Code.
                             const imageBuffer=await tableUtils.createMetroTimeTable(ticketData);
-                            replySenderWithImagge({
+                            replySenderWithImage({
                                 chat_id:chat_id, 
                                 text: ticketData.route_name,
                             }, imageBuffer);
@@ -188,6 +189,7 @@ const createDataFroKMRL=(data, timeStamp)=>{
             ticket_id:itemData.id,
             route_name:itemData.descriptor.name,
             price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value,
+            time:null,
             rows:[]
         };
         
@@ -205,10 +207,18 @@ const createDataFroKMRL=(data, timeStamp)=>{
         }
 
         for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+10); i++){
+            const depTime=new Date(startStopData.time.schedule.times[i]);
+            const arrTime=new Date(endStopData.time.schedule.times[i]);
             tableRows.push({
-                departure_time: (new Date(startStopData.time.schedule.times[i])).toLocaleTimeString() ,
-                arrival_time: (new Date(endStopData.time.schedule.times[i])).toLocaleTimeString(),
+                departure_time: depTime.toLocaleTimeString() ,
+                arrival_time: arrTime.toLocaleTimeString(),
             });
+            if (ticketTable.time==null){
+               // TODO: function for time calculation. 
+            }
+            else{
+
+            }
         }
 
         ticketTable.rows=tableRows;
