@@ -338,44 +338,50 @@ const handleBooking = async (cachedData, data) => {
 const getTicketPricing=async (currLocation, bookingDate) => {
     const bookingDateAsString=(new Date(bookingDate)).toISOString();
     const response=await axios.get("https://wonderlaapi.stayhalo.in/prices?date="+bookingDateAsString);
-
     const pricesInfo={};
     if(response.status!=200){
         return null;
     }
 
-    response.data.result.forEach((price)=>{
-        if(price.product.location==currLocation){
-            let key="";
-            if(price.product.type=='Regular'){
-                if(price.type=='Adult'){
-                    key=steps.adultRegularTickets;
+    console.log(response.data);
+    try {
+        response.data.result.forEach((price)=>{
+            if(price.product.location==currLocation){
+                let key="";
+                if(price.product.type=='Regular'){
+                    if(price.type=='Adult'){
+                        key=steps.adultRegularTickets;
+                    }
+                    else if(price.type=='Child'){
+                        key=steps.childRegularTickets;
+                    }
+                    else if(price.type=='Senior Citizen'){
+                        key=steps.seniorCitizenTickets;
+                    }
                 }
-                else if(price.type=='Child'){
-                    key=steps.childRegularTickets;
+                else{
+                    if(price.type=='Adult'){
+                        key=steps.adultFastrackTickets;
+                    }
+                    else if(price.type=='Child'){
+                        key=steps.childFastrackTickets;
+                    }
                 }
-                else if(price.type=='Senior Citizen'){
-                    key=steps.seniorCitizenTickets;
+    
+    
+                pricesInfo[key]={
+                    ticket_id:price._id,
+                    amount: price.amount
                 }
             }
-            else{
-                if(price.type=='Adult'){
-                    key=steps.adultFastrackTickets;
-                }
-                else if(price.type=='Child'){
-                    key=steps.childFastrackTickets;
-                }
-            }
-
-
-            pricesInfo[key]={
-                ticket_id:price._id,
-                amount: price.amount
-            }
-        }
-    });
-
-    return pricesInfo;
+        });
+    
+        return pricesInfo;
+    
+    } catch (error) {
+        console.log(error);
+        return null;        
+    }
 }
 
 const bookTicket=async(bookingData)=>{
@@ -385,7 +391,7 @@ const bookTicket=async(bookingData)=>{
         if(bookingData[ticketType]>0){
             tickets.push({
                 "ticket":pricesInfo[ticketType]["ticket_id"],
-                "count":bookingData[ticketType]
+                "quantity":bookingData[ticketType]
             });   
         }
     }
@@ -403,6 +409,8 @@ const bookTicket=async(bookingData)=>{
         "tickets":tickets,
         "customer":customerData
     }
+
+    // console.log(reqBody);
 
     try {
         const bookingResponse=await axios.post("https://wonderlaapi.stayhalo.in/bookings", reqBody);
