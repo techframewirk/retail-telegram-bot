@@ -99,7 +99,7 @@ const callBackController = async (req, res, next) => {
                     }
                 } else {
                     if(getProviders(data, 'KMRL').length>0){
-
+                        console.log('KMRL Callback Working.');
                     }
                     else{
                         console.log('Cab Already Booked!')
@@ -206,6 +206,7 @@ const createDataFroKMRL=(data, timeStamp)=>{
             }
         }
 
+        let totalTime=0, count=0;
         for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+10); i++){
             const depTime=new Date(startStopData.time.schedule.times[i]);
             const arrTime=new Date(endStopData.time.schedule.times[i]);
@@ -213,14 +214,12 @@ const createDataFroKMRL=(data, timeStamp)=>{
                 departure_time: depTime.toLocaleTimeString() ,
                 arrival_time: arrTime.toLocaleTimeString(),
             });
-            if (ticketTable.time==null){
-               // TODO: function for time calculation. 
-            }
-            else{
-
-            }
+            const timeofTravel=(arrTime.getTime()-depTime.getTime())/60000;
+            totalTime+=timeofTravel;
+            count++;
         }
 
+        ticketTable.time=parseInt(totalTime/count);
         ticketTable.rows=tableRows;
         ticketTables.push(ticketTable);
     });

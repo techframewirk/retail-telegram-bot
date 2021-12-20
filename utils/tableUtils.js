@@ -7,7 +7,7 @@ async function createMetroTimeTable(data){
         timingRows+=createTimingRows(rowData);
     });
 
-    let tableHtmlCode=htmlWrap(data.route_name, data.price, 5, timingRows)
+    let tableHtmlCode=htmlWrap(data.route_name, data.price, data.time, timingRows)
     const imageBuffer=await imageUtils.getImageBuffer(tableHtmlCode);
     return imageBuffer;
 }
