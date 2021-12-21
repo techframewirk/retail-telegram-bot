@@ -345,7 +345,7 @@ const getTicketPricing=async (currLocation, bookingDate) => {
         return null;
     }
 
-    console.log(response.data);
+    // console.log(response.data);
     try {
         response.data.result.forEach((price)=>{
             if(price.product.location==currLocation){
