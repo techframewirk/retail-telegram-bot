@@ -69,7 +69,6 @@ const handleMetros=async(cachedData, data)=>{
 }
 
 const searchForMetros=async (startLocation, endLocation)=>{
-    // TODO: must change the coordinates.
     let reqBody = {
         "context": {
             "domain": "nic2004:60212",
