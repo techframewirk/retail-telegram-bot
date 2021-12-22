@@ -1,0 +1,24 @@
+{
+    "context": {
+        "domain": "nic2004:60212",
+        "country": "IND",
+        "action": "search",
+        "core_version": "0.9.1"
+    },
+    "message": {
+        "intent" : {
+            "fulfillment": {
+                "start" : {
+                    "location" : {
+                        "gps" : "10.109289, 76.349601"
+                    }
+                },
+                "end" : {
+                    "location" : {
+                        "gps" : "10.087307, 76.342809"
+                    }
+                }
+            }
+        }
+    }
+}

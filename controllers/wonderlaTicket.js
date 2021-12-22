@@ -255,6 +255,8 @@ const handleBooking = async (cachedData, data) => {
                     contactInfo:phoneNumber
                 }));
 
+                console.log(data.message.contact);
+
                 replySender({
                     chat_id:data.message.chat.id,
                     text:messages.emailID

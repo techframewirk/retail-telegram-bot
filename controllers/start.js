@@ -3,7 +3,10 @@ const commands = require('../commands.json')
 const redis = require('../utils/redis')
 const arrayConvert = require('../utils/arrayConvert')
 const bookCabs = require('./bookCabs')
+const metros = require('./metros')
 const db = require('../utils/mongo')
+const tableUtils=require('../utils/tableUtils')
+const replyUtils=require('../utils/replyUtils')
 const wonderlaTicket = require('./wonderlaTicket');
 const bookParking = require('./bookParking')
 const replySender=require('./replySender');
@@ -143,7 +146,23 @@ const webhookController = async (req, res, next) => {
                                 })
                             }
                         })
-                    break
+                    break;
+                    case '/metro':
+                        redis.set(data.message.from.id, JSON.stringify({
+                            chat_id: data.message.chat.id,
+                            initiatedCommand: '/metro',
+                            nextStep: 'startLocation'
+                        }), (err, reply) => {
+                            if(err) {
+                                throw err
+                            } else {
+                                replySender({
+                                    "chat_id":data.message.chat.id,
+                                    "text":"I am glad to find metros for you!\nPlease help me by sending start location."
+                                });
+                            }
+                        })
+                        break;
                 }
             } else {
                 redis.get(data.message.from.id, async (err, reply) => {
@@ -156,6 +175,10 @@ const webhookController = async (req, res, next) => {
                                 case '/bookcabs':
                                     await bookCabs.handleBooking(cachedData, data)
                                     break
+                                case '/metro' :
+                                    // Org Code.
+                                    await metros.handleMetros(cachedData, data);
+                                    break;
 
                                 case '/wonderlaticket':
                                     await wonderlaTicket.handleBooking(cachedData, data)

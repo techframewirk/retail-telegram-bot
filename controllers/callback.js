@@ -1,6 +1,8 @@
 const db = require('../utils/mongo')
 const axios = require('axios').default
 const redis = require('../utils/redis')
+const tableUtils=require('./../utils/tableUtils')
+const replySenderWithImage=require('./replySenderWithImage')
 
 const callBackController = async (req, res, next) => {
     try{
@@ -20,10 +22,9 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
-                    
-                    // TODO: create a function to get providers of particular type.
-                    if (data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== undefined || data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark') !== null ) {
-                        const resultDocument = data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark')
+                
+                    if(getProviders(data, 'pinpark').length>0){
+                        const resultDocument = getProviders(data, 'pinpark');
                         let parkingSpaces = resultDocument.items.map(item => {
                             return {
                                 chat_id: savedData.chat_id,
@@ -52,7 +53,29 @@ const callBackController = async (req, res, next) => {
                                 parkingLocations: data.message.catalog['bpp/providers'].find(provider => provider.id === 'pinpark').items
                             }
                         })
-                    } else {
+                    }
+                    else if(getProviders(data, 'KMRL').length>0){
+                        let ticketTables=[];
+                        const kmrlProviders=getProviders(data, 'KMRL');
+                        kmrlProviders.forEach((providerData)=>{
+                            ticketTables=[
+                                ...ticketTables,
+                                ...createDataFroKMRL(providerData, savedData.timeStamp)
+                            ];
+                        });
+
+                        const chat_id=savedData.chat_id;
+                        ticketTables.forEach(async (ticketData)=>{
+                            // ORG Code.
+                            const imageBuffer=await tableUtils.createMetroTimeTable(ticketData);
+                            replySenderWithImage({
+                                chat_id:chat_id, 
+                                text: ticketData.route_name,
+                            }, imageBuffer);
+                        });
+
+                    }
+                    else {
                         let cabs = []
                         data.message.catalog.items.forEach(cabData => {
                             cabs.push({
@@ -75,7 +98,12 @@ const callBackController = async (req, res, next) => {
                         })
                     }
                 } else {
-                    console.log('Cab Already Booked!')
+                    if(getProviders(data, 'KMRL').length>0){
+                        console.log('KMRL Callback Working.');
+                    }
+                    else{
+                        console.log('Cab Already Booked!')
+                    }
                 }
                 break
             case 'on_confirm':
@@ -144,6 +172,74 @@ const replySender = async (data) => {
         `${process.env.telegramURL}/bot${process.env.telegramToken}/sendMessage`,
         data
     )
+}
+
+const createDataFroKMRL=(data, timeStamp)=>{
+    const locationsMap={};
+    data.locations.forEach(locationData => {
+        locationsMap[locationData.id]=locationData;
+    });
+
+    // Each item will provide a ticket.
+    const ticketTables=[];
+    data.items.forEach(itemData => {
+        // Each Row Will consist of 
+        // Name, price, start, end, departure time, arrival time.
+        const ticketTable={
+            ticket_id:itemData.id,
+            route_name:itemData.descriptor.name,
+            price: ((itemData.price.currency=="INR") ? "Rs.": "$") +" "+itemData.price.value,
+            time:null,
+            rows:[]
+        };
+        
+        const tableRows=[];
+        let start_IndexForTimeStamp=0;
+        const startStopData=itemData.stops[0];
+        const endStopData=itemData.stops[itemData.stops.length-1];
+
+        for(let i=0; i<startStopData.time.schedule.times.length; i++){
+            const timeValue=new Date(startStopData.time.schedule.times[i]);
+            if(timeValue>timeStamp){
+                start_IndexForTimeStamp=i;
+                break;
+            }
+        }
+
+        let totalTime=0, count=0;
+        for(let i=start_IndexForTimeStamp; i<Math.min(startStopData.time.schedule.times.length, start_IndexForTimeStamp+10); i++){
+            const depTime=new Date(startStopData.time.schedule.times[i]);
+            const arrTime=new Date(endStopData.time.schedule.times[i]);
+            tableRows.push({
+                departure_time: depTime.toLocaleTimeString() ,
+                arrival_time: arrTime.toLocaleTimeString(),
+            });
+            const timeofTravel=(arrTime.getTime()-depTime.getTime())/60000;
+            totalTime+=timeofTravel;
+            count++;
+        }
+
+        ticketTable.time=parseInt(totalTime/count);
+        ticketTable.rows=tableRows;
+        ticketTables.push(ticketTable);
+    });
+
+    return ticketTables;
+}
+
+const getProviders=(data, typeName)=>{
+    if(data.message.catalog['bpp/providers']==undefined){
+        return [];
+    }
+
+    let providersData=[];
+    data.message.catalog['bpp/providers'].forEach(providerData => {
+        if(providerData.id==typeName){
+            providersData.push(providerData);
+        }
+    });
+
+    return providersData;
 }
 
 module.exports = callBackController
