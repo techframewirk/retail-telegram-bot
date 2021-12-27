@@ -3,14 +3,17 @@ const path=require('path');
 
 async function createWonderlaTicketsInfo(pricesInfo, chat_id, locationName){
 
+    let ticketTypes=["Adult", "Child", "Senior Citizen", "Fast Track Adult", "Fast Track Child"];
+    let ticketKeys=["adultRegularTickets", "childRegularTickets", "seniorCitizenTickets", "adultFastrackTickets", "childFastrackTickets"];
+
     let rowsHtml="";
 
-    rowsHtml+=ticketPriceDiv("Adult", pricesInfo["adultRegularTickets"]["amount"]);
-    rowsHtml+=ticketPriceDiv("Child", pricesInfo["childRegularTickets"]["amount"]);
-    rowsHtml+=ticketPriceDiv("Senior Citizen", pricesInfo["seniorCitizenTickets"]["amount"]);
-    rowsHtml+=ticketPriceDiv("Fast Track Adult", pricesInfo["adultFastrackTickets"]["amount"]);
-    rowsHtml+=ticketPriceDiv("Fast Track Child", pricesInfo["childFastrackTickets"]["amount"]);
-
+    for(let i=0; i<ticketTypes.length; i++){
+        if((pricesInfo[ticketKeys[i]]!=undefined)&&(pricesInfo[ticketKeys[i]]!=null)){
+            rowsHtml+=ticketPriceDiv(ticketTypes[i], pricesInfo[ticketKeys[i]]["amount"]);
+        }
+    }
+    
     // // OLD Code.
     // // Adjust the size of it.
     // let imageFileName=chat_id+"_"+Date.now().toString()+".png";
