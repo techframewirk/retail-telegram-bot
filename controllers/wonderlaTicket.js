@@ -35,13 +35,14 @@ const handleBooking = async (cachedData, data) => {
         case steps.selectDate:
             let bookingDate=null; 
             try {
-                if(dateTimeUtils.validate(data.message.text)){
-                    bookingDate=Date.parse(data.message.text);
+                if(dateTimeUtils.patternValidate(data.message.text)){
+                    bookingDate=new Date(data.message.text);
                 }
             } catch (error) {
                 console.log(error);
             }
             
+            console.log(bookingDate);
             if((bookingDate!=null)&&(bookingDate!=NaN)){
                 let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
                 redis.set(data.message.chat.id, JSON.stringify({ 

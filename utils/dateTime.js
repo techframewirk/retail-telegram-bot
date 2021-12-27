@@ -1,3 +1,6 @@
+// TODO: change the pattern for date matching.
+// Make it exact same.
+// https://pretagteam.com/question/js-check-invalid-date
 function validatedate(dateString){      
     let dateformat = /^(0?[1-9]|1[0-2])[\.](0?[1-9]|[1-2][0-9]|3[01])[\.]\d{4}$/;      
             
@@ -41,7 +44,12 @@ function validatedate(dateString){
     return true;      
 }   
 
+function isValidDate(d) {
+    return d instanceof Date && !isNaN(d);
+}
+
 module.exports={
-    validate:validatedate
+    patternValidate:validatedate,
+    dateValidate:isValidDate
 }
 
