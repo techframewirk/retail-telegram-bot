@@ -12,7 +12,7 @@ const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
         case steps.selectLocation:
             const locationNumber=parseInt(data.message.text);
-            if((locationNumber!=undefined)&&(!Number.isNaN(locationNumber))&&(locationNumber<=locations.length)){
+            if((locationNumber!=undefined)&&(!Number.isNaN(locationNumber))&&(isNumberValid(data.message.text))){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.selectDate,
@@ -44,24 +44,44 @@ const handleBooking = async (cachedData, data) => {
             
             console.log(bookingDate);
             if((bookingDate!=null)&&(bookingDate!=NaN)){
-                let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
-                redis.set(data.message.chat.id, JSON.stringify({ 
-                    ...cachedData, 
-                    nextStep: steps.adultRegularTickets,
-                    bookingDate:bookingDate,
-                    pricesInfo:pricesInfo
-                }));
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: "Hang on while we are searching."
+                }); 
 
-                console.log("Creating Image...");
-                let imageBuffer=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
-                if(imageBuffer!=null){
-                    await replySenderWithImage({
-                        chat_id:data.message.chat.id,
-                        text:messages.adultRegularTickets
-                    }, imageBuffer);
-                }
-                else{
-                    replySender({
+                let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
+                try {
+                    if(Object.keys(pricesInfo).length>0){
+                        console.log("Creating Image...");
+                        let imageBuffer=await ticketUtils.createWonderlaTicketsInfo(pricesInfo, data.message.chat.id, cachedData.location);
+                        if(imageBuffer!=null){
+                            await replySenderWithImage({
+                                chat_id:data.message.chat.id,
+                                text:messages.adultRegularTickets
+                            }, imageBuffer);
+
+                            redis.set(data.message.chat.id, JSON.stringify({ 
+                                ...cachedData, 
+                                nextStep: steps.adultRegularTickets,
+                                bookingDate:bookingDate,
+                                pricesInfo:pricesInfo
+                            }));
+                        }
+                        else{
+                            await replySender({
+                                chat_id: data.message.chat.id,
+                                text: "Something went wrong."
+                            });   
+                        }
+                    }
+                    else{
+                        await replySender({
+                            chat_id: data.message.chat.id,
+                            text: "No Information Currently Available.\nSelect another date."
+                        });   
+                    }
+                } catch (error) {
+                    await replySender({
                         chat_id: data.message.chat.id,
                         text: "Something went wrong."
                     });   
@@ -70,7 +90,7 @@ const handleBooking = async (cachedData, data) => {
             else{
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "Invalid Date Format. Please try again!"
+                    text: "Invalid Date. Please try again!"
                 });   
             }
         break;
@@ -78,7 +98,7 @@ const handleBooking = async (cachedData, data) => {
         case steps.adultRegularTickets:
             {
                 const ticketCount=parseInt(data.message.text);
-                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))&&(isNumberValid(data.message.text))){
                     redis.set(data.message.chat.id, JSON.stringify({ 
                         ...cachedData, 
                         nextStep: steps.adultFastrackTickets,
@@ -102,7 +122,7 @@ const handleBooking = async (cachedData, data) => {
         case steps.adultFastrackTickets:
             {
                 const ticketCount=parseInt(data.message.text);
-                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))&&(isNumberValid(data.message.text))){
                     redis.set(data.message.chat.id, JSON.stringify({ 
                         ...cachedData, 
                         nextStep: steps.childRegularTickets,
@@ -125,7 +145,7 @@ const handleBooking = async (cachedData, data) => {
         case steps.childRegularTickets:
             {
                 const ticketCount=parseInt(data.message.text);
-                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))&&(isNumberValid(data.message.text))){
                     redis.set(data.message.chat.id, JSON.stringify({ 
                         ...cachedData, 
                         nextStep: steps.childFastrackTickets,
@@ -149,7 +169,7 @@ const handleBooking = async (cachedData, data) => {
         case steps.childFastrackTickets:
             {
                 const ticketCount=parseInt(data.message.text);
-                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))&&(isNumberValid(data.message.text))){
                     redis.set(data.message.chat.id, JSON.stringify({ 
                         ...cachedData, 
                         nextStep: steps.seniorCitizenTickets,
@@ -172,7 +192,7 @@ const handleBooking = async (cachedData, data) => {
         case steps.seniorCitizenTickets:
             {
                 const ticketCount=parseInt(data.message.text);
-                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))){
+                if((ticketCount!=undefined)&&(!Number.isNaN(ticketCount))&&(isNumberValid(data.message.text))){
                     redis.set(data.message.chat.id, JSON.stringify({ 
                         ...cachedData, 
                         nextStep: steps.firstName,
@@ -430,6 +450,11 @@ const bookTicket=async(bookingData)=>{
 
 const locations=['Kochi', 'Bangalore', 'Hyderabad'];
 
+function isNumberValid(val){
+    let pattern = /^\d+$/;
+    return pattern.test(val)
+}
+
 const steps={
     "wonderlaTicket":"wonderlaticket",
     "selectLocation":"selectLocation",
@@ -448,7 +473,7 @@ const steps={
 
 const messages={
     "wonderlaTicket":"Some welcome message.",
-    "selectLocation":"Select Location: \n1. Kochi\n2.Bangalore\n3.Hyderabad\nEnter the number assigned to your desired location.",
+    "selectLocation":"Select Location: \n1. Kochi\n2. Bangalore\n3. Hyderabad\nEnter the number assigned to your desired location.",
     "selectDate":"Please enter the date for tickets in the given format.\nMM.DD.YYYY",
     "adultRegularTickets":"How many Adult - regular tickets would you like to book?",
     "adultFastrackTickets":"How many Adult - fastrack tickets would you like to book?",
