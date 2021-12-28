@@ -211,8 +211,12 @@ const createDataFroKMRL=(data, timeStamp)=>{
             const depTime=new Date(startStopData.time.schedule.times[i]);
             const arrTime=new Date(endStopData.time.schedule.times[i]);
             tableRows.push({
-                departure_time: depTime.toLocaleTimeString() ,
-                arrival_time: arrTime.toLocaleTimeString(),
+                departure_time: depTime.toLocaleTimeString(
+                    [], {hour: '2-digit', minute:'2-digit'}
+                ),
+                arrival_time: arrTime.toLocaleTimeString(
+                    [], {hour: '2-digit', minute:'2-digit'}
+                ),
             });
             const timeofTravel=(arrTime.getTime()-depTime.getTime())/60000;
             totalTime+=timeofTravel;
