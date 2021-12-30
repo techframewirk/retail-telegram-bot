@@ -25,22 +25,25 @@ const callBackController = async (req, res, next) => {
                 
                     if(getProviders(data, 'pinpark').length>0){
                         const resultDocument = getProviders(data, 'pinpark');
-                        let parkingSpaces = resultDocument.items.map(item => {
-                            return {
-                                chat_id: savedData.chat_id,
-                                text: `Name => ${item.descriptor.name}\nPrice => Rs.${item.price.value}\nQuantity Available:${item.quantity.available.count}`,
-                                reply_markup: {
-                                    inline_keyboard: [
-                                        [{
-                                            text: "Book",
-                                            callback_data: `bookparking-selectparkingslot-${item.location_id}-${item.id}`
-                                        }]
-                                    ],
-                                    "resize_keyboard": true,
-                                    "one_time_keyboard": true
-                                }
-                            }
-                        })
+                        resultDocument.forEach((providerData)=>{
+                            providerData.items.forEach((item)=>{
+                                parkingSpaces.push({
+                                    chat_id: savedData.chat_id,
+                                    text: `Name => ${item.descriptor.name}\nPrice => Rs.${item.price.value}\nQuantity Available:${item.quantity.available.count}`,
+                                    reply_markup: {
+                                        inline_keyboard: [
+                                            [{
+                                                text: "Book",
+                                                callback_data: `bookparking-selectparkingslot-${item.location_id}-${item.id}`
+                                            }]
+                                        ],
+                                        "resize_keyboard": true,
+                                        "one_time_keyboard": true
+                                    }
+                                });
+                            });
+                        });
+                        
                         parkingSpaces.forEach(parkingSpace => {
                             replySender(parkingSpace)
                         })
