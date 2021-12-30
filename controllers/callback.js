@@ -22,6 +22,8 @@ const callBackController = async (req, res, next) => {
                             onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
                         }
                     })
+
+                    // TODO: Create a switch statement for domains here.
                 
                     if(getProviders(data, 'pinpark').length>0){
                         const resultDocument = getProviders(data, 'pinpark');
@@ -247,6 +249,12 @@ const getProviders=(data, typeName)=>{
     });
 
     return providersData;
+}
+
+const domains={
+    cabs: "nic2004:60221",
+    parking: "nic2004:63031",
+    metros: "nic2004:60212"
 }
 
 module.exports = callBackController
