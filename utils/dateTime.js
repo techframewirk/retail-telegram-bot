@@ -118,7 +118,19 @@ function validate(dateText){
     return dateText===dateTestText;
 }
 
+const formatWithSpaces=(dateString)=>{
+    let parts=dateString.split('.');
+    let res="";
+    parts.forEach(element => {
+       res+=element;
+       res+=" "; 
+    });
+
+    return res;
+}
+
 module.exports={
     validate,
+    formatWithSpaces
 }
 

@@ -35,8 +35,8 @@ const handleBooking = async (cachedData, data) => {
         case steps.selectDate:
             let bookingDate=null; 
             try {
-                if(dateTimeUtils.patternValidate(data.message.text)){
-                    bookingDate=new Date(data.message.text);
+                if(dateTimeUtils.validate(data.message.text)){
+                    bookingDate=Date.parse(dateTimeUtils.formatWithSpaces(data.message.text));
                 }
             } catch (error) {
                 console.log(error);
@@ -50,6 +50,7 @@ const handleBooking = async (cachedData, data) => {
                 }); 
 
                 let pricesInfo=await getTicketPricing(cachedData.location, data.message.text);
+                console.log(pricesInfo);
                 try {
                     if(Object.keys(pricesInfo).length>0){
                         console.log("Creating Image...");
@@ -359,14 +360,15 @@ const handleBooking = async (cachedData, data) => {
 // }
 
 const getTicketPricing=async (currLocation, bookingDate) => {
-    const bookingDateAsString=(new Date(bookingDate)).toISOString();
+    const bookingDateAsString=(new Date(bookingDate+" 08:00:00 AM")).toISOString();
+    // const bookingDateAsString=(new Date()).toISOString();
     const response=await axios.get("https://wonderlaapi.stayhalo.in/prices?date="+bookingDateAsString);
     const pricesInfo={};
     if(response.status!=200){
         return null;
     }
 
-    // console.log(response.data);
+    console.log(bookingDateAsString);
     try {
         response.data.result.forEach((price)=>{
             if(price.product.location==currLocation){
