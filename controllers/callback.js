@@ -186,7 +186,7 @@ const createDataFroKMRL=(data, callingTime)=>{
         locationsMap[locationData.id]=locationData;
     });
 
-    // Each item will provide a ticket.
+    // Each item will provide a Time table.
     const ticketTables=[];
     data.items.forEach(itemData => {
         const ticketTable={
