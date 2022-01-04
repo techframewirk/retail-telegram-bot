@@ -7,6 +7,7 @@ const replySenderWithImage=require('./replySenderWithImage');
 const ticketUtils=require('./../utils/ticketUtils');
 const imageUtils=require('./../utils/imageUtils');
 const dateTimeUtils=require('./../utils/dateTime');
+const regExpsUtil=require('./../utils/regExps');
 
 const handleBooking = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -43,7 +44,7 @@ const handleBooking = async (cachedData, data) => {
             }
             
             console.log(bookingDate);
-            if((bookingDate!=null)&&(bookingDate!=NaN)){
+            if((bookingDate!=null)&&(!Number.isNaN(bookingDate))){
                 replySender({
                     chat_id: data.message.chat.id,
                     text: "Hang on while we are searching."
@@ -215,7 +216,7 @@ const handleBooking = async (cachedData, data) => {
         break;
         case steps.firstName:{
             const firstNameValue=data.message.text;
-            if(firstNameValue!=undefined){
+            if((firstNameValue!=undefined)&&(regExpsUtil.isName(firstNameValue))){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.lastName,
@@ -237,7 +238,7 @@ const handleBooking = async (cachedData, data) => {
         break;
         case steps.lastName:{
             const lastNameValue=data.message.text;
-            if(lastNameValue!=undefined){
+            if((lastNameValue!=undefined)&&(regExpsUtil.isName(lastNameValue))){
                 redis.set(data.message.chat.id, JSON.stringify({ 
                     ...cachedData, 
                     nextStep: steps.contactInfo,
@@ -361,7 +362,6 @@ const handleBooking = async (cachedData, data) => {
 
 const getTicketPricing=async (currLocation, bookingDate) => {
     const bookingDateAsString=(new Date(bookingDate+" 08:00:00 AM")).toISOString();
-    // const bookingDateAsString=(new Date()).toISOString();
     const response=await axios.get("https://wonderlaapi.stayhalo.in/prices?date="+bookingDateAsString);
     const pricesInfo={};
     if(response.status!=200){
