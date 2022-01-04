@@ -65,7 +65,7 @@ const callBackController = async (req, res, next) => {
                         kmrlProviders.forEach((providerData)=>{
                             ticketTables=[
                                 ...ticketTables,
-                                ...createDataFroKMRL(providerData, savedData.timeStamp)
+                                ...createDataFroKMRL(providerData, savedData.callingTime)
                             ];
                         });
 
@@ -179,8 +179,9 @@ const replySender = async (data) => {
     )
 }
 
-const createDataFroKMRL=(data, timeStamp)=>{
+const createDataFroKMRL=(data, callingTime)=>{
     const locationsMap={};
+    const timeStamp=new Date(callingTime)
     data.locations.forEach(locationData => {
         locationsMap[locationData.id]=locationData;
     });
@@ -188,8 +189,6 @@ const createDataFroKMRL=(data, timeStamp)=>{
     // Each item will provide a ticket.
     const ticketTables=[];
     data.items.forEach(itemData => {
-        // Each Row Will consist of 
-        // Name, price, start, end, departure time, arrival time.
         const ticketTable={
             ticket_id:itemData.id,
             route_name:itemData.descriptor.name,
