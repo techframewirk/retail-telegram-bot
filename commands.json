@@ -1,30 +1,6 @@
 [
     {
-        "command": "bookcabs",
-        "description": "To book a taxi in Kochi"
-    },
-    {
-        "command": "help",
-        "description": "To resolve any issue you are facing"
-    },
-    {
-        "command": "aboutus",
-        "description": "To know more about StayHalo"
-    },
-    {
-        "command": "cancelbooking",
-        "description": "To Cancel active bookings."
-    },
-    {
-        "command": "wonderlaticket",
-        "description": "To book Wonderla Ticket"
-    },
-    {
-        "command":"metro",
-        "description":"To find metros."
-    },
-    {
-        "command": "bookparking",
-        "description": "To book Parking spaces"
+        "command": "retail",
+        "description": "To buy retail goods."
     }
 ]
