@@ -4,6 +4,7 @@ const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
 const retail = require('./retail');
+const callbackUtils=require('../utils/callback')
 
 const setWebhook = async () => {
     try {
@@ -49,14 +50,14 @@ const webhookController = async (req, res, next) => {
                         redis.set(data.message.from.id, JSON.stringify({
                             chat_id: data.message.chat.id,
                             initiatedCommand: '/retail',
-                            nextStep: retail.retailSteps.location
+                            nextStep: retail.steps.location
                         }), (err, reply) => {
                             if (err) {
                                 throw err
                             } else {
                                 replySender({
                                     "chat_id": data.message.chat.id,
-                                    "text": retail.retailMsgs.location
+                                    "text": retail.msgs.location
                                 });
                             }
                         })
@@ -88,13 +89,28 @@ const webhookController = async (req, res, next) => {
                 })
             }
         } else if (data.callback_query != undefined) {
-            const type = data.callback_query.data.split('-')[0]
-            const callbackData = data.callback_query.data.split('-')[1]
-            console.log(callbackData)
+            // For Seperation We have Used
+            const decryptedData=callbackUtils.decrypt(data.callback_query.data)
+            const type = decryptedData.type;
             switch (type) {
                 // case 'bookCab':
                 //     bookCabs.confirmBooking(data, callbackData)
                 //     break
+                
+                case 'retail' :{
+                    const commandType=decryptedData.commandType
+                    switch (commandType) {
+                        case retail.callbackTypes.next:
+                            retail.nextRetailItems(data, decryptedData)
+                            break;
+                        
+                        case retail.callbackTypes.addToCart:
+                            console.log(decryptedData.id)
+                            break;
+                    }
+                
+                    break;
+                }
             }
         } else {
             console.log("S")

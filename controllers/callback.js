@@ -5,7 +5,9 @@ const imageUtils = require('./../utils/imageUtils');
 const replySender = require('./replySender');
 const replySenderWithImage = require('./replySenderWithImage')
 const replySenderWithImageFromPath = require('./replySenderWithImageFromPath')
-const path=require('path');
+const path = require('path');
+const retail = require('./retail')
+const callbackUtils=require('./../utils/callback')
 
 const callBackController = async (req, res, next) => {
     try {
@@ -20,7 +22,6 @@ const callBackController = async (req, res, next) => {
                     isResolved: false
                 })
                 if (savedData != null) {
-                    // TODO: update with each item extracted data.
                     // await db.getDB().collection('ongoing').updateOne({
                     //     _id: savedData._id
                     // }, {
@@ -32,34 +33,87 @@ const callBackController = async (req, res, next) => {
                     // When Data is found in mongo.
                     if ((data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
                         const bpp_providers = data.message.catalog['bpp/providers'];
-                        const itemDetails = [];
+                        let itemDetails = [];
+
+                        let toDisplayItems = false;
+                        if (savedData.itemDetails) {
+                            itemDetails = [...savedData.itemDetails];
+                        }
+                        else {
+                            toDisplayItems = true;
+                        }
+
                         bpp_providers.forEach((providerData) => {
                             const locationData = providerData['locations'];
                             const shopDetails = providerData['descriptor'];
+                            const providerId = providerData['id'];
 
                             providerData.items.forEach((itemData) => {
                                 itemDetails.push({
-                                    ...itemData, retail_location: locationData, retail_decriptor: shopDetails
+                                    ...itemData,
+                                    retail_location: locationData,
+                                    retail_decriptor: shopDetails,
+                                    providerId: providerId
                                 });
                             });
                         });
 
-                        itemDetails.forEach(async (itemData) => {
-                            replySenderWithImageFromPath({
-                                chat_id:savedData.chat_id,
-                                text:JSON.stringify(itemData.retail_location),
+                        let countofItemToDisplay = retail.displayItemCount;
+                        let itemsToDisplay = [];
+                        if (toDisplayItems) {
+                            if (itemDetails.length > countofItemToDisplay) {
+                                itemsToDisplay = itemDetails.slice(0, countofItemToDisplay);
+                                itemDetails = itemDetails.slice(countofItemToDisplay);
+                            }
+                            else {
+                                itemsToDisplay = itemDetails;
+                                itemDetails = [];
+                            }
+                        }
+
+                        
+                        // Saving the rest of items in DB.
+                        await db.getDB().collection('ongoing').updateOne({
+                            _id:savedData._id
+                        }, {
+                            $set:{
+                                itemDetails:itemDetails
+                            }
+                        });
+                        
+                        if(itemsToDisplay.length>0){
+                            // Sending Items.
+                            await retail.sendItemMessage(itemsToDisplay, savedData.chat_id);
+
+                            // TODO: Take a look at its position.
+                            // Next button.
+                            replySender({
+                                chat_id: savedData.chat_id,
+                                text: "To view More Items",
                                 reply_markup: JSON.stringify({
                                     inline_keyboard: [
-                                        [{
-                                            text: "Book",
-                                            callback_data: "NOT Much..."
-                                        }]
+                                        [
+                                            {
+                                                text: "Next",
+                                                callback_data: callbackUtils.encrypt({
+                                                    type:'retail',
+                                                    commandType: retail.callbackTypes.next, 
+                                                    id: savedData._id
+                                                })
+                                            }
+                                        ]
                                     ],
                                     "resize_keyboard": true,
                                     "one_time_keyboard": true
                                 })
-                            }, path.resolve("public/testImages/forTesting.jpg"))
-                        });
+                            });
+                        }
+                        else{
+                            replySender({
+                                chat_id:savedData.chat_id,
+                                text:"Currently No matching items available."
+                            });
+                        }
                     }
                     else {
                         console.log("Data from Unknown Domain...");

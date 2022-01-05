@@ -2,6 +2,9 @@ const axios = require('axios').default
 const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
+const replySenderWithImage=require('./replySenderWithImage')
+const {ObjectId}=require('mongodb')
+const callbackUtils=require('../utils/callback')
 
 const handleRetail = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -26,28 +29,27 @@ const handleRetail = async (cachedData, data) => {
         case retailSteps.itemName:
             if (data.message.text) {
                 let updateCachedData = cachedData;
-                updateCachedData['nextStep'] = retailSteps.itemDisplay;
+                updateCachedData['nextStep'] = retailSteps.itemSelect;
                 updateCachedData[retailSteps.itemName] = data.message.text;
                 redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
 
-
                 // TODO: call the API.
-                const retailSearchResp=await searchForRetail(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
-                if(retailSearchResp){
-                    updateCachedData['onSearchTrigger']=retailSearchResp;
-                    updateCachedData['isResolved']=false;
-                    updateCachedData['transaction_id']=retailSearchResp.context.transaction_id;
-                    updateCachedData['message_id']=retailSearchResp.context.message_id;
-                    updateCachedData['callingTime']=retailSearchResp.context.timestamp;
-                    
+                const retailSearchResp = await searchForRetail(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
+                if (retailSearchResp) {
+                    updateCachedData['onSearchTrigger'] = retailSearchResp;
+                    updateCachedData['isResolved'] = false;
+                    updateCachedData['transaction_id'] = retailSearchResp.context.transaction_id;
+                    updateCachedData['message_id'] = retailSearchResp.context.message_id;
+                    updateCachedData['callingTime'] = retailSearchResp.context.timestamp;
+
                     await db.getDB().collection('ongoing').insertOne(updateCachedData);
-                    
+
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.itemDisplay
+                        text: retailMsgs.itemSelect
                     });
                 }
-                else{
+                else {
                     replySender({
                         chat_id: data.message.chat.id,
                         text: "Something went wrong."
@@ -64,11 +66,82 @@ const handleRetail = async (cachedData, data) => {
     }
 }
 
+const nextRetailItems = async (data, callbackData) => {
+    try {
+        const savedDataId=callbackData.id;
+        const savedData=await db.getDB().collection('ongoing').findOne({
+            _id: ObjectId(savedDataId)
+        })
+
+        let itemsToDisplay=[];
+        let itemDetails=[...savedData.itemDetails];
+        if(itemDetails.length>displayItemCount){
+            itemsToDisplay = itemDetails.slice(0, displayItemCount);
+            itemDetails = itemDetails.slice(displayItemCount);
+        }
+        else {
+            itemsToDisplay = itemDetails;
+            itemDetails = [];
+        }
+        
+        if(itemsToDisplay.length>0){
+            // Sending the message.
+            await sendItemMessage(itemsToDisplay, savedData.chat_id)
+
+            // TODO: Take a look at its position.
+            // Next button.
+            replySender({
+                chat_id: savedData.chat_id,
+                text: "To view More Items",
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "Next",
+                                callback_data: callbackUtils.encrypt({
+                                    type:'retail',
+                                    commandType: retailCallBackTypes.next, 
+                                    id: savedData._id
+                                })
+                            }
+                        ]
+                    ],
+                    "resize_keyboard": true,
+                    "one_time_keyboard": true
+                })
+            });
+        }
+        else{
+            replySender({
+                chat_id:savedData.chat_id,
+                text:"Currently No more matching items available."
+            });
+        }
+        
+        // Saving the rest of items in DB.
+        await db.getDB().collection('ongoing').updateOne({
+            _id:savedData._id
+        }, {
+            $set:{
+                itemDetails:itemDetails
+            }
+        });
+
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 const retailSteps = {
     location: "location",
     itemName: "itemName",
-    itemDisplay: "itemDisplay",
+    itemSelect: "itemSelect",
     checkout: "checkout"
+}
+
+const retailCallBackTypes={
+    next:"Next",
+    addToCart:"AddToCart"
 }
 
 // These are the text messages for each step.
@@ -76,7 +149,7 @@ const retailSteps = {
 const retailMsgs = {
     location: "Hi! Where do you want to get your items delivered to today?",
     itemName: "Thanks! What would you like to buy?",
-    itemDisplay: "Here’s what I found near you: "
+    itemSelect: "Here’s what I found near you: "
 }
 
 const searchForRetail = async (itemName, location) => {
@@ -111,8 +184,6 @@ const searchForRetail = async (itemName, location) => {
         }
     };
 
-
-
     try {
         const response = await axios.post(
             `${process.env.becknService}/trigger/search`,
@@ -127,6 +198,77 @@ const searchForRetail = async (itemName, location) => {
     }
 }
 
+const sendItemMessage=async(itemsToDisplay, chat_id)=>{
+    const promises=[];
+    itemsToDisplay.forEach(async (itemData) => {
+        const displayText = getRetailItemText({
+            mrp: "Rs " + itemData.price.value,
+            short_desc: itemData.descriptor.name,
+            soldBy: itemData.retail_decriptor.name
+        });
+
+        const reply_markup = JSON.stringify({
+            inline_keyboard: [
+                [
+                    {
+                        text: "Add to cart",
+                        callback_data: callbackUtils.encrypt({
+                            type:'retail',
+                            commandType: retailCallBackTypes.addToCart,
+                            id: itemData.id
+                        })
+                    }
+                ]
+            ],
+            "resize_keyboard": true,
+            "one_time_keyboard": true
+        })
+
+        let imgURL;
+        if ((itemData.descriptor.images) && (itemData.descriptor.images.length > 0)) {
+            imgURL = itemData.descriptor.images[0];
+        }
+
+        if (imgURL) {
+            promises.push(new Promise(async (resolve, reject)=> {
+                await replySenderWithImage({
+                    chat_id: chat_id,
+                    text: displayText,
+                    reply_markup: reply_markup
+                }, imgURL, false);
+                resolve("Success");
+            }));
+        }
+        else {
+            promises.push(new Promise(async (resolve, reject)=> {
+                await replySender({
+                    chat_id: chat_id,
+                    text: displayText,
+                    reply_markup: reply_markup
+                });
+                resolve("Success")
+            }))
+        }
+    });
+
+    const res=await Promise.all(promises);
+}
+
+const displayItemCount=1;
+
+const getRetailItemText = ({
+    short_desc, mrp, soldBy
+}) => {
+    return short_desc + "\n" + "MRP: " + mrp + "\n" + "Slod By: " + soldBy;
+}
+
 module.exports = {
-    handleRetail, retailSteps, retailMsgs
+    handleRetail,
+    steps: retailSteps,
+    msgs: retailMsgs,
+    callbackTypes: retailCallBackTypes,
+    getRetailItemText,
+    nextRetailItems,
+    displayItemCount,
+    sendItemMessage
 };
