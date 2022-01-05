@@ -1,0 +1,22 @@
+{
+    "context": {
+        "domain": "nic2004:52110",
+        "core_version": "0.9.3"
+    },
+    "message": {
+        "intent": {
+            "item": {
+                "descriptor": {
+                    "name": "banana"
+                }
+            },
+            "fulfillment": {
+                "end": {
+                    "location": {
+                        "gps": "12.4535445,77.9283792"
+                    }
+                }
+            }
+        }
+    }
+}

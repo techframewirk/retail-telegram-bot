@@ -1,8 +1,8 @@
-const fs=require('fs');
-const path=require('path');
-const puppeteer=require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
 
-async function getImageBuffer(htmlCode){
+async function createImageBuffer(htmlCode) {
     try {
         const browser = await puppeteer.launch({
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -24,7 +24,7 @@ async function getImageBuffer(htmlCode){
     }
 }
 
-async function deleteImage(imagePath){
+async function deleteImage(imagePath) {
     try {
         fs.unlinkSync(path.resolve(imagePath));
     } catch (error) {
@@ -32,6 +32,12 @@ async function deleteImage(imagePath){
     }
 }
 
-module.exports={
-     deleteImage, getImageBuffer 
+async function getBufferFromImage(imagePath) {
+    let readStream = fs.createReadStream(path.resolve(imagePath));
+    console.log(readStream)
+    return readStream;
+}
+
+module.exports = {
+    deleteImage, createImageBuffer, getBufferFromImage
 }

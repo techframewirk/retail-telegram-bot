@@ -90,6 +90,7 @@ const webhookController = async (req, res, next) => {
         } else if (data.callback_query != undefined) {
             const type = data.callback_query.data.split('-')[0]
             const callbackData = data.callback_query.data.split('-')[1]
+            console.log(callbackData)
             switch (type) {
                 // case 'bookCab':
                 //     bookCabs.confirmBooking(data, callbackData)

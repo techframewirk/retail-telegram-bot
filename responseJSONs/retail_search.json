@@ -1,0 +1,115 @@
+{
+    "context": {
+        "domain": "nic2021:52110",
+        "country": "IND",
+        "city": "std:8080",
+        "action": "on_search",
+        "core_version": "0.9.3",
+        "bap_id": "qa.api.box.beckn.org",
+        "bap_uri": "https://7818-27-62-144-87.ngrok.io/protocol/",
+        "transaction_id": "92d8149d-6c07-484f-b4c1-9da52f83c283",
+        "message_id": "3c5de950-3c25-4890-ad06-d9543d50d1d7",
+        "timestamp": "2022-01-05T09:54:51Z",
+        "ttl": "P1M",
+        "bpp_id": "bpp1.beckn.org",
+        "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+    },
+    "message": {
+        "catalog": {
+            "bpp/descriptor": {
+                "name": "Bpp1",
+                "short_desc": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English.",
+                "images": [
+                    "https://bpp1.beckn.org/pub/media/beckn/business/logo/default/travel-bags.jpg"
+                ]
+            },
+            "bpp/providers": [
+                {
+                    "id": "453678",
+                    "descriptor": {
+                        "name": "Grocery Retail",
+                        "short_desc": "Grocery Retail Product.",
+                        "images": [
+                            "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                        ]
+                    },
+                    "locations": [
+                        {
+                            "id": "el",
+                            "gps": "12.891704, 77.576873",
+                            "address": {
+                                "door": "",
+                                "name": "Address Name",
+                                "building": "West side",
+                                "street": "lsts 354537",
+                                "locality": "",
+                                "state": "Bangalore",
+                                "country": "IND",
+                                "area_code": "160002"
+                            },
+                            "station_code": "160002",
+                            "city": {
+                                "name": "Bangalore",
+                                "code": "Bangalore"
+                            },
+                            "country": {
+                                "name": "IND",
+                                "code": "IN"
+                            }
+                        }
+                    ],
+                    "items": [
+                        {
+                            "id": "G-0007",
+                            "descriptor": {
+                                "name": "G Fresh Raw Banana",
+                                "images": [
+                                    "https://bpp1.beckn.org/pub/media/catalog/product/a/8/a8zgpjtxv2.jpg"
+                                ],
+                                "long_desc": "Banana 6 unit"
+                            },
+                            "price": {
+                                "currency": "INR",
+                                "value": 72
+                            },
+                            "matched": true,
+                            "location_id": "el"
+                        },
+                        {
+                            "id": "G-0007-1",
+                            "descriptor": {
+                                "name": "G Fresh Ripe Banana",
+                                "images": [
+                                    "https://bpp1.beckn.org/pub/media/catalog/product/y/e/yellow-banana-500x500.jpg"
+                                ],
+                                "long_desc": "Banana 6 unit"
+                            },
+                            "price": {
+                                "currency": "INR",
+                                "value": 100
+                            },
+                            "matched": true,
+                            "location_id": "el"
+                        },
+                        {
+                            "id": "G-0007-2",
+                            "descriptor": {
+                                "name": "G Fresh Banana Smoothie",
+                                "images": [
+                                    "https://bpp1.beckn.org/pub/media/catalog/product/b/a/banana-smoothie-1200-square-519.jpg"
+                                ],
+                                "long_desc": "Banana 6 unit"
+                            },
+                            "price": {
+                                "currency": "INR",
+                                "value": 172
+                            },
+                            "matched": true,
+                            "location_id": "el"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
