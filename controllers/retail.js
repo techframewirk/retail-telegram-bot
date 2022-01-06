@@ -327,7 +327,7 @@ const addToCartCallback=async(chat_id, itemUniqueId)=>{
 const getRetailItemText = ({
     short_desc, mrp, soldBy
 }) => {
-    return short_desc + "\n" + "MRP: " + mrp + "\n" + "Slod By: " + soldBy;
+    return short_desc + "\n" + "MRP: " + mrp + "\n" + "Sold By: " + soldBy;
 }
 
 const retailSteps = {
