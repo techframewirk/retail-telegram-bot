@@ -117,9 +117,8 @@ const handleRetail = async (cachedData, data) => {
     }
 }
 
-const nextRetailItems = async (data, callbackData) => {
+const nextRetailItems = async (data, savedDataId) => {
     try {
-        const savedDataId=callbackData.id;
         const savedData=await db.getDB().collection('ongoing').findOne({
             _id: ObjectId(savedDataId)
         })
@@ -318,9 +317,40 @@ const addToCartCallback=async(chat_id, itemUniqueId)=>{
                 });
             }
         });
-
     } catch (error) {
         console.log(error)
+    }
+}
+
+const checkoutCallback=async(chat_id, messageId)=>{
+    try {
+        redis.get(chat_id, async (err, reply) => {
+            if (err) {
+                replySender({
+                    chat_id:chat_id,
+                    text:"Something went Wrong"
+                });
+                console.log(err)
+            } else {
+                const cachedData = JSON.parse(reply)
+                
+                const savedData=await db.getDB().collection('ongoing').findOne({
+                    message_id:messageId
+                });
+
+                // TODO: extract data and send the info in message.
+                // Add button for proceed and cancel.
+
+                // Set the next step.
+                // cachedData['nextStep']=retailSteps.itemCountStep(itemUniqueId);
+                redis.set(chat_id, JSON.stringify(cachedData));
+            }
+        });
+
+        console.log(savedData);
+
+    } catch (error) {
+        
     }
 }
 
@@ -363,6 +393,7 @@ module.exports = {
     getRetailItemText,
     nextRetailItems,
     addToCartCallback,
+    checkoutCallback,
     displayItemCount,
     sendItemMessage,
     createProviderId, 

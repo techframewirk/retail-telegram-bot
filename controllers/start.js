@@ -97,7 +97,7 @@ const webhookController = async (req, res, next) => {
                     const commandType=decryptedData.commandType
                     switch (commandType) {
                         case retail.callbackTypes.next:
-                            retail.nextRetailItems(data, decryptedData)
+                            retail.nextRetailItems(data, decryptedData.id)
                             break;
                         
                         case retail.callbackTypes.addToCart:
@@ -105,8 +105,7 @@ const webhookController = async (req, res, next) => {
                             break;
                         
                         case retail.callbackTypes.checkout:
-                            console.log(decryptedData.id)
-                            // TODO: handle checkout here.
+                            retail.checkoutCallback(data.callback_query.from.id, decryptedData.id)
                             break;
                     }
                 
