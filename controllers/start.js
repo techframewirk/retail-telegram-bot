@@ -4,7 +4,7 @@ const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
 const retail = require('./retail');
-const callbackUtils=require('../utils/callback')
+const callbackUtils = require('../utils/callback')
 
 const setWebhook = async () => {
     try {
@@ -90,25 +90,33 @@ const webhookController = async (req, res, next) => {
             }
         } else if (data.callback_query != undefined) {
             // For Seperation We have Used
-            const decryptedData=callbackUtils.decrypt(data.callback_query.data)
+            const decryptedData = callbackUtils.decrypt(data.callback_query.data)
             const type = decryptedData.type;
             switch (type) {
-                case 'retail' :{
-                    const commandType=decryptedData.commandType
+                case 'retail': {
+                    const commandType = decryptedData.commandType
                     switch (commandType) {
                         case retail.callbackTypes.next:
                             retail.nextRetailItems(data, decryptedData.id)
                             break;
-                        
+
                         case retail.callbackTypes.addToCart:
                             retail.addToCartCallback(data.callback_query.from.id, decryptedData.id)
                             break;
-                        
+
                         case retail.callbackTypes.checkout:
                             retail.checkoutCallback(data.callback_query.from.id, decryptedData.id)
                             break;
+
+                        case retail.callbackTypes.cancelCheckout:
+                            retail.cancelCheckoutCallback(data.callback_query.from.id, decryptedData.id)
+                            break;
+
+                        case retail.callbackTypes.proceedCheckout:
+                            retail.proceedCheckoutCallback(data.callback_query.from.id, decryptedData.id);
+                            break;
                     }
-                
+
                     break;
                 }
             }

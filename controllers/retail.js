@@ -2,9 +2,9 @@ const axios = require('axios').default
 const redis = require('../utils/redis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
-const replySenderWithImage=require('./replySenderWithImage')
-const {ObjectId}=require('mongodb')
-const callbackUtils=require('../utils/callback')
+const replySenderWithImage = require('./replySenderWithImage')
+const { ObjectId } = require('mongodb')
+const callbackUtils = require('../utils/callback')
 
 const handleRetail = async (cachedData, data) => {
     switch (cachedData.nextStep) {
@@ -32,7 +32,6 @@ const handleRetail = async (cachedData, data) => {
                 updateCachedData['nextStep'] = retailSteps.itemSelect;
                 updateCachedData[retailSteps.itemName] = data.message.text;
 
-                // TODO: call the API.
                 const retailSearchResp = await searchForRetail(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
                 if (retailSearchResp) {
                     updateCachedData['transaction_id'] = retailSearchResp.context.transaction_id;
@@ -42,7 +41,7 @@ const handleRetail = async (cachedData, data) => {
 
                     updateCachedData['onSearchTrigger'] = retailSearchResp;
                     updateCachedData['isResolved'] = false;
-                    
+
                     await db.getDB().collection('ongoing').insertOne(updateCachedData);
 
                     replySender({
@@ -64,30 +63,37 @@ const handleRetail = async (cachedData, data) => {
                 });
             }
             break;
-        
-        default:{
+        case retailSteps.itemSelect: {
+
+        }
+            break;
+        case retailSteps.proceedCheckout:{
+
+        }
+        break;
+        default: {
             // This will handle all item selection count.
             // TODO: apply validation on integer.
-            const count=parseInt(data.message.text);
-            if(data.message.text){
-                const chat_id=data.message.chat.id;
-                const parts=cachedData.nextStep.split('&&');
-                let itemUniqueId="";
-                for(let i=1; i<parts.length; i++){
-                    itemUniqueId+=parts[i];
+            const count = parseInt(data.message.text);
+            if (data.message.text) {
+                const chat_id = data.message.chat.id;
+                const parts = cachedData.nextStep.split('&&');
+                let itemUniqueId = "";
+                for (let i = 1; i < parts.length; i++) {
+                    itemUniqueId += parts[i];
                 }
-                
-                cachedData['nextStep']=retailSteps.itemSelect;
-                let selectedItems=[]
-                if(cachedData['selectedItems']){
-                    selectedItems=[...cachedData['selectedItems']];
+
+                cachedData['nextStep'] = retailSteps.itemSelect;
+                let selectedItems = []
+                if (cachedData['selectedItems']) {
+                    selectedItems = [...cachedData['selectedItems']];
                 }
-                
+
                 selectedItems.push({
-                    item_unique_id:itemUniqueId,
-                    count:count
+                    item_unique_id: itemUniqueId,
+                    count: count
                 });
-                cachedData['selectedItems']=selectedItems;
+                cachedData['selectedItems'] = selectedItems;
                 console.log(cachedData)
 
                 const reply_markup = JSON.stringify({
@@ -96,7 +102,7 @@ const handleRetail = async (cachedData, data) => {
                             {
                                 text: "Checkout",
                                 callback_data: callbackUtils.encrypt({
-                                    type:'retail',
+                                    type: 'retail',
                                     commandType: retailCallBackTypes.checkout,
                                     id: cachedData.message_id
                                 })
@@ -108,9 +114,9 @@ const handleRetail = async (cachedData, data) => {
                 })
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
-                    chat_id:chat_id,
+                    chat_id: chat_id,
                     text: "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
-                    reply_markup:reply_markup
+                    reply_markup: reply_markup
                 })
             }
         }
@@ -119,13 +125,13 @@ const handleRetail = async (cachedData, data) => {
 
 const nextRetailItems = async (data, savedDataId) => {
     try {
-        const savedData=await db.getDB().collection('ongoing').findOne({
+        const savedData = await db.getDB().collection('ongoing').findOne({
             _id: ObjectId(savedDataId)
         })
 
-        let itemsToDisplay=[];
-        let itemDetails=[...savedData.itemDetails];
-        if(itemDetails.length>displayItemCount){
+        let itemsToDisplay = [];
+        let itemDetails = [...savedData.itemDetails];
+        if (itemDetails.length > displayItemCount) {
             itemsToDisplay = itemDetails.slice(0, displayItemCount);
             itemDetails = itemDetails.slice(displayItemCount);
         }
@@ -133,8 +139,8 @@ const nextRetailItems = async (data, savedDataId) => {
             itemsToDisplay = itemDetails;
             itemDetails = [];
         }
-        
-        if(itemsToDisplay.length>0){
+
+        if (itemsToDisplay.length > 0) {
             // Sending the message.
             await sendItemMessage(itemsToDisplay, savedData.chat_id)
 
@@ -149,8 +155,8 @@ const nextRetailItems = async (data, savedDataId) => {
                             {
                                 text: "Next",
                                 callback_data: callbackUtils.encrypt({
-                                    type:'retail',
-                                    commandType: retailCallBackTypes.next, 
+                                    type: 'retail',
+                                    commandType: retailCallBackTypes.next,
                                     id: savedData._id
                                 })
                             }
@@ -161,19 +167,19 @@ const nextRetailItems = async (data, savedDataId) => {
                 })
             });
         }
-        else{
+        else {
             replySender({
-                chat_id:savedData.chat_id,
-                text:"Currently No more matching items available."
+                chat_id: savedData.chat_id,
+                text: "Currently No more matching items available."
             });
         }
-        
+
         // Saving the rest of items in DB.
         await db.getDB().collection('ongoing').updateOne({
-            _id:savedData._id
+            _id: savedData._id
         }, {
-            $set:{
-                itemDetails:itemDetails
+            $set: {
+                itemDetails: itemDetails
             }
         });
 
@@ -228,12 +234,12 @@ const searchForRetail = async (itemName, location) => {
     }
 }
 
-const sendItemMessage=async(itemsToDisplay, chat_id)=>{
-    const promises=[];
+const sendItemMessage = async (itemsToDisplay, chat_id) => {
+    const promises = [];
     itemsToDisplay.forEach(async (itemData) => {
         const displayText = getRetailItemText({
-            mrp: "Rs " + itemData.price.value,
-            short_desc: itemData.descriptor.name,
+            mrp: "Rs. " + itemData.price.value,
+            name: itemData.descriptor.name,
             soldBy: itemData.retail_decriptor.name
         });
 
@@ -243,7 +249,7 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
                     {
                         text: "Add to cart",
                         callback_data: callbackUtils.encrypt({
-                            type:'retail',
+                            type: 'retail',
                             commandType: retailCallBackTypes.addToCart,
                             id: itemData.item_unique_id
                         })
@@ -260,7 +266,7 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
         }
 
         if (imgURL) {
-            promises.push(new Promise(async (resolve, reject)=> {
+            promises.push(new Promise(async (resolve, reject) => {
                 await replySenderWithImage({
                     chat_id: chat_id,
                     text: displayText,
@@ -270,7 +276,7 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
             }));
         }
         else {
-            promises.push(new Promise(async (resolve, reject)=> {
+            promises.push(new Promise(async (resolve, reject) => {
                 await replySender({
                     chat_id: chat_id,
                     text: displayText,
@@ -281,39 +287,39 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
         }
     });
 
-    const res=await Promise.all(promises);
+    const res = await Promise.all(promises);
 }
 
-const displayItemCount=1;
+const displayItemCount = 1;
 
-const createProviderId=({
+const createProviderId = ({
     bpp_id, providerId
-})=>{
-    return bpp_id+" "+providerId;
+}) => {
+    return bpp_id + " " + providerId;
 }
 
-const createItemId=({
+const createItemId = ({
     bpp_id, providerId, itemId
-})=>{
-    return bpp_id+" "+providerId+" "+itemId;
+}) => {
+    return bpp_id + " " + providerId + " " + itemId;
 }
 
-const addToCartCallback=async(chat_id, itemUniqueId)=>{
+const addToCartCallback = async (chat_id, itemUniqueId) => {
     try {
         redis.get(chat_id, async (err, reply) => {
             if (err) {
                 replySender({
-                    chat_id:chat_id,
-                    text:"Something went Wrong"
+                    chat_id: chat_id,
+                    text: "Something went Wrong"
                 });
                 console.log(err)
             } else {
                 const cachedData = JSON.parse(reply)
-                cachedData['nextStep']=retailSteps.itemCountStep(itemUniqueId);
+                cachedData['nextStep'] = retailSteps.itemCountStep(itemUniqueId);
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
-                    chat_id:chat_id,
-                    text:retailMsgs.itemCountStep
+                    chat_id: chat_id,
+                    text: retailMsgs.itemCountStep
                 });
             }
         });
@@ -322,58 +328,131 @@ const addToCartCallback=async(chat_id, itemUniqueId)=>{
     }
 }
 
-const checkoutCallback=async(chat_id, messageId)=>{
+const checkoutCallback = async (chat_id, messageId) => {
     try {
         redis.get(chat_id, async (err, reply) => {
             if (err) {
                 replySender({
-                    chat_id:chat_id,
-                    text:"Something went Wrong"
+                    chat_id: chat_id,
+                    text: "Something went Wrong"
                 });
                 console.log(err)
             } else {
                 const cachedData = JSON.parse(reply)
-                
-                const savedData=await db.getDB().collection('ongoing').findOne({
-                    message_id:messageId
+
+                const savedData = await db.getDB().collection('ongoing').findOne({
+                    message_id: messageId
                 });
 
-                // TODO: extract data and send the info in message.
+                const selectItemDetails = [];
+                savedData.allItemDetails.forEach((itemData) => {
+                    let itemCount = 0;
+                    cachedData.selectedItems.forEach(({ item_unique_id, count }) => {
+                        if (itemData.item_unique_id == item_unique_id) {
+                            itemCount = count;
+                        }
+                    });
+
+                    if (itemCount > 0) {
+                        selectItemDetails.push({
+                            ...itemData, count: itemCount
+                        })
+                    }
+                });
+
                 // Add button for proceed and cancel.
+                let cartText = "Your Cart.\n";
+                let currItemCount = 1;
+                selectItemDetails.forEach((itemData) => {
+                    cartText += "\n" + currItemCount + ".\n" + getRetailItemText({
+                        name: itemData.descriptor.name,
+                        mrp: "Rs. " + itemData.price.value,
+                        soldBy: itemData.retail_decriptor.name,
+                        count: itemData.count
+                    }) + "\n";
+                    currItemCount++;
+                });
+                cartText += "\n\nClick on Proceed to place an order.\nClick on Cancel to add further items to cart.";
+
+                const reply_markup = {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "Cancel",
+                                callback_data: callbackUtils.encrypt({
+                                    type: 'retail',
+                                    commandType: retailCallBackTypes.cancelCheckout,
+                                    id: savedData.message_id
+                                })
+                            },
+                            {
+                                text: "Proceed",
+                                callback_data: callbackUtils.encrypt({
+                                    type: 'retail',
+                                    commandType: retailCallBackTypes.proceedCheckout,
+                                    id: savedData.message_id
+                                })
+                            }
+                        ]
+                    ],
+                    "resize_keyboard": true,
+                    "one_time_keyboard": true
+                };
+                replySender({
+                    chat_id: chat_id,
+                    text: cartText,
+                    reply_markup: reply_markup
+                });
 
                 // Set the next step.
-                // cachedData['nextStep']=retailSteps.itemCountStep(itemUniqueId);
+                cachedData['nextStep']=retailSteps.proceedCheckout;
                 redis.set(chat_id, JSON.stringify(cachedData));
             }
         });
 
-        console.log(savedData);
-
-    } catch (error) {
-        
+    } catch (error) {   
+        console.log(error)
     }
 }
 
+
+const cancelCheckoutCallback = async (chat_id, message_id) => {
+    console.log(chat_id, message_id)
+    // TODO: Change the nextStep from proceed checkout to item select.
+}  
+
+const proceedCheckoutCallback = async (chat_id, message_id) => {
+    console.log(chat_id, message_id)
+    // TODO: Change the next step from proceed checkout to something else.
+    // Ask Nirmal About it.
+}
+
 const getRetailItemText = ({
-    short_desc, mrp, soldBy
+    name, mrp, soldBy, count
 }) => {
-    return short_desc + "\n" + "MRP: " + mrp + "\n" + "Sold By: " + soldBy;
+    let text = "" + name + "\n" + "MRP : " + mrp + "\n" + "Sold By : " + soldBy;
+    if (count) {
+        text += "\nQuantity : " + count;
+    }
+    return text;
 }
 
 const retailSteps = {
     location: "location",
     itemName: "itemName",
     itemSelect: "itemSelect",
-    itemCountStep: (itemUniqueId)=>{
-        return "itemCount&&"+itemUniqueId
+    itemCountStep: (itemUniqueId) => {
+        return "itemCount&&" + itemUniqueId
     },
-    checkout: "checkout"
+    proceedCheckout: "proceedCheckout"
 }
 
-const retailCallBackTypes={
-    next:"Next",
-    addToCart:"AddToCart",
-    checkout:"CheckOut"
+const retailCallBackTypes = {
+    next: "Next",
+    addToCart: "AddToCart",
+    checkout: "CheckOut",
+    cancelCheckout: "CancelCheckout",
+    proceedCheckout: "Proceed"
 }
 
 // These are the text messages for each step.
@@ -391,11 +470,16 @@ module.exports = {
     msgs: retailMsgs,
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
+    
+    // Callbacks
     nextRetailItems,
     addToCartCallback,
     checkoutCallback,
+    cancelCheckoutCallback,
+    proceedCheckoutCallback,
+    
     displayItemCount,
     sendItemMessage,
-    createProviderId, 
+    createProviderId,
     createItemId
 };
