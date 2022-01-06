@@ -88,6 +88,7 @@ const handleRetail = async (cachedData, data) => {
                     count:count
                 });
                 cachedData['selectedItems']=selectedItems;
+                console.log(cachedData)
 
                 const reply_markup = JSON.stringify({
                     inline_keyboard: [
@@ -299,9 +300,7 @@ const createItemId=({
 }
 
 const addToCartCallback=async(chat_id, itemUniqueId)=>{
-    console.log(chat_id)
     try {
-        console.log(itemUniqueId)
         redis.get(chat_id, async (err, reply) => {
             if (err) {
                 replySender({

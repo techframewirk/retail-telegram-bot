@@ -101,7 +101,6 @@ const webhookController = async (req, res, next) => {
                             break;
                         
                         case retail.callbackTypes.addToCart:
-                            console.log(decryptedData.id)
                             retail.addToCartCallback(data.callback_query.from.id, decryptedData.id)
                             break;
                         
