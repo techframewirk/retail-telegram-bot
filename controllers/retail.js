@@ -403,6 +403,9 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
                 items: itemsForAPICall,
                 bppUri: bppUri, bppId: bppId
             });
+
+            // TODO: change the next step.
+            // Send message regarding the order.
         }
     });
 }
