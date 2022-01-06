@@ -63,8 +63,6 @@ const handleRetail = async (cachedData, data) => {
     }
 
     switch (cachedData.nextStep) {
-        // TODO: check whether its one of the steps mention in json or not.
-        // or Item Count.
         case retailSteps.location:
             if (data.message.location) {
                 let updateCachedData = cachedData;
@@ -620,7 +618,30 @@ const checkoutCallback = async (chat_id, messageId) => {
 
 const cancelCheckoutCallback = async (chat_id, message_id) => {
     console.log(chat_id, message_id)
-    // TODO: Change the nextStep from proceed checkout to item select.
+    try {
+        
+    redis.get(chat_id, async (err, reply) => {
+        if (err) {
+            replySender({
+                chat_id: chat_id,
+                text: "Something went Wrong"
+            });
+            console.log(err)
+        } else {
+            // TODO: check the next step.
+            // if it is proceed checkout, then only allow.
+            const cachedData = JSON.parse(reply)
+            cachedData['nextStep'] = retailSteps.itemSelect;
+            redis.set(chat_id, JSON.stringify(cachedData));
+            replySender({
+                chat_id:chat_id,
+                text:"You can still add more items to your cart."
+            });
+        }
+    });
+    } catch (error) {
+       console.log(error) 
+    }
 }
 
 const proceedCheckoutCallback = async (chat_id, messageId) => {
@@ -680,8 +701,6 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
             });
 
             if (addToCartResp) {
-                // TODO: change the next step in cache.
-                // Send message regarding the order.
 
                 cachedData['nextStep'] = retailSteps.waitForQouteCallback;
                 redis.set(chat_id, JSON.stringify(cachedData));

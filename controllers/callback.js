@@ -153,6 +153,7 @@ const callBackController = async (req, res, next) => {
                 });
                 if (savedData != null) {
                     // TODO: check whether next step is wait for quote callback or not.
+                    
                     const chat_id = savedData.chat_id;
                     redis.get(chat_id, async(err, reply)=>{
                         if(err){
