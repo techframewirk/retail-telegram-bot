@@ -49,26 +49,29 @@ const callBackController = async (req, res, next) => {
                         bpp_providers.forEach((providerData) => {
                             const locationData = providerData['locations'];
                             const shopDetails = providerData['descriptor'];
-                            const providerId=providerData['id'];
+                            const providerId = providerData['id'];
+                            const bppId=data.context.bpp_id;
+                            const bppURI=data.context.bpp_uri;
                             const providerUniqueId = retail.createProviderId({
-                                bpp_id: data.context.bpp_id, 
+                                bpp_id: bppId,
                                 providerId: providerId
                             });
 
-                            // save bpp id and uri
-                         providerData.items.forEach((itemData) => {
-                                const itemUniqueId=retail.createItemId({
-                                    bpp_id: data.context.bpp_id,
+                            providerData.items.forEach((itemData) => {
+                                const itemUniqueId = retail.createItemId({
+                                    bpp_id: bppId,
                                     providerId: providerId,
                                     itemId: itemData.id
                                 });
-                                const itemDetail={
+                                const itemDetail = {
                                     ...itemData,
                                     retail_location: locationData,
                                     retail_decriptor: shopDetails,
                                     provider_unique_id: providerUniqueId,
-                                    providerId: providerId,
-                                    item_unique_id:itemUniqueId
+                                    provider_id: providerId,
+                                    bpp_id:bppId,
+                                    bpp_uri:bppURI,
+                                    item_unique_id: itemUniqueId
                                 };
 
                                 itemDetails.push(itemDetail);
@@ -142,6 +145,9 @@ const callBackController = async (req, res, next) => {
                 }
                 break
             case 'on_confirm':
+                break;
+            case 'on_select':
+                console.log(data)
                 break;
             case 'on_update':
                 break

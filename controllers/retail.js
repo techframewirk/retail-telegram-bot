@@ -32,7 +32,7 @@ const handleRetail = async (cachedData, data) => {
                 updateCachedData['nextStep'] = retailSteps.itemSelect;
                 updateCachedData[retailSteps.itemName] = data.message.text;
 
-                const retailSearchResp = await searchForRetail(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
+                const retailSearchResp = await searchForItemsAPI(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
                 if (retailSearchResp) {
                     updateCachedData['transaction_id'] = retailSearchResp.context.transaction_id;
                     updateCachedData['message_id'] = retailSearchResp.context.message_id;
@@ -67,13 +67,15 @@ const handleRetail = async (cachedData, data) => {
 
         }
             break;
-        case retailSteps.proceedCheckout:{
+        case retailSteps.proceedCheckout: {
 
         }
-        break;
+            break;
         default: {
             // This will handle all item selection count.
             // TODO: apply validation on integer.
+            // TODO: apply validation on providerId,
+            // all items should be from same provider.
             const count = parseInt(data.message.text);
             if (data.message.text) {
                 const chat_id = data.message.chat.id;
@@ -188,52 +190,6 @@ const nextRetailItems = async (data, savedDataId) => {
     }
 }
 
-const searchForRetail = async (itemName, location) => {
-    let reqBody = {
-        "context": {
-            "domain": "nic2004:52110",
-            "core_version": "0.9.3",
-            "city": "std:080",
-            "country": "IND",
-            "bpp_id": "bpp1.beckn.org",
-            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
-        },
-        "message": {
-            "intent": {
-                "item": {
-                    "descriptor": {
-                        "name": itemName
-                    }
-                },
-                "fulfillment": {
-                    "end": {
-                        "location": {
-                            // // ORG Code.
-                            // "gps": location
-
-                            // Temp Code 1
-                            "gps": "12.4535445,77.9283792"
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    try {
-        const response = await axios.post(
-            `${process.env.becknService}/trigger/search`,
-            reqBody
-        );
-
-        // console.log(response.data);
-        return response.data;
-    } catch (error) {
-        console.log(error);
-        return null;
-    }
-}
-
 const sendItemMessage = async (itemsToDisplay, chat_id) => {
     const promises = [];
     itemsToDisplay.forEach(async (itemData) => {
@@ -292,18 +248,6 @@ const sendItemMessage = async (itemsToDisplay, chat_id) => {
 
 const displayItemCount = 1;
 
-const createProviderId = ({
-    bpp_id, providerId
-}) => {
-    return bpp_id + " " + providerId;
-}
-
-const createItemId = ({
-    bpp_id, providerId, itemId
-}) => {
-    return bpp_id + " " + providerId + " " + itemId;
-}
-
 const addToCartCallback = async (chat_id, itemUniqueId) => {
     try {
         redis.get(chat_id, async (err, reply) => {
@@ -314,6 +258,9 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
                 });
                 console.log(err)
             } else {
+                // TODO: check the next step.
+                // If its item select then only allow.
+
                 const cachedData = JSON.parse(reply)
                 cachedData['nextStep'] = retailSteps.itemCountStep(itemUniqueId);
                 redis.set(chat_id, JSON.stringify(cachedData));
@@ -338,33 +285,21 @@ const checkoutCallback = async (chat_id, messageId) => {
                 });
                 console.log(err)
             } else {
+                // TODO: check the next step.
+                // if it is select item, then only allow.
                 const cachedData = JSON.parse(reply)
 
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     message_id: messageId
                 });
 
-                const selectItemDetails = [];
-                savedData.allItemDetails.forEach((itemData) => {
-                    let itemCount = 0;
-                    cachedData.selectedItems.forEach(({ item_unique_id, count }) => {
-                        if (itemData.item_unique_id == item_unique_id) {
-                            itemCount = count;
-                        }
-                    });
-
-                    if (itemCount > 0) {
-                        selectItemDetails.push({
-                            ...itemData, count: itemCount
-                        })
-                    }
-                });
+                const selectItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
 
                 // Add button for proceed and cancel.
                 let cartText = "Your Cart.\n";
                 let currItemCount = 1;
                 selectItemDetails.forEach((itemData) => {
-                    cartText += "\n" + currItemCount + ".\n" + getRetailItemText({
+                    cartText += "\n*" + currItemCount + ".*\n" + getRetailItemText({
                         name: itemData.descriptor.name,
                         mrp: "Rs. " + itemData.price.value,
                         soldBy: itemData.retail_decriptor.name,
@@ -405,12 +340,12 @@ const checkoutCallback = async (chat_id, messageId) => {
                 });
 
                 // Set the next step.
-                cachedData['nextStep']=retailSteps.proceedCheckout;
+                cachedData['nextStep'] = retailSteps.proceedCheckout;
                 redis.set(chat_id, JSON.stringify(cachedData));
             }
         });
 
-    } catch (error) {   
+    } catch (error) {
         console.log(error)
     }
 }
@@ -419,23 +354,211 @@ const checkoutCallback = async (chat_id, messageId) => {
 const cancelCheckoutCallback = async (chat_id, message_id) => {
     console.log(chat_id, message_id)
     // TODO: Change the nextStep from proceed checkout to item select.
-}  
+}
 
-const proceedCheckoutCallback = async (chat_id, message_id) => {
-    console.log(chat_id, message_id)
-    // TODO: Change the next step from proceed checkout to something else.
-    // Ask Nirmal About it.
+const proceedCheckoutCallback = async (chat_id, messageId) => {
+
+    redis.get(chat_id, async (err, reply) => {
+        if (err) {
+            replySender({
+                chat_id: chat_id,
+                text: "Something went Wrong"
+            });
+            console.log(err)
+        } else {
+            // TODO: check the next step.
+            // if it is select item, then only allow.
+            const cachedData = JSON.parse(reply)
+
+            const savedData = await db.getDB().collection('ongoing').findOne({
+                message_id: messageId
+            });
+
+            const transactionId = savedData.transaction_id;
+            const selectedItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
+            const itemsForAPICall = [];
+            let provderId;
+            let providerLocations;
+            let bppId, bppUri;
+            selectedItemDetails.forEach((itemData) => {
+                itemsForAPICall.push({
+                    "id": itemData.id,
+                    "quantity": {
+                        "count": itemData.count
+                    }
+                });
+                provderId = itemData.provder_id
+                providerLocations = {
+                    "id": itemData.location_id
+                }
+                bppId = itemData.bpp_id
+                bppUri = itemData.bpp_uri
+            });
+
+            const addToCartResp = await selectAddToCartAPI({
+                transactionId: transactionId,
+                messageId: messageId,
+                providerId: provderId,
+                providerLocations: providerLocations,
+                items: itemsForAPICall,
+                bppUri: bppUri, bppId: bppId
+            });
+        }
+    });
+}
+
+// Util Functions.
+const createProviderId = ({
+    bpp_id, providerId
+}) => {
+    return bpp_id + " " + providerId;
+}
+
+const createItemId = ({
+    bpp_id, providerId, itemId
+}) => {
+    return bpp_id + " " + providerId + " " + itemId;
 }
 
 const getRetailItemText = ({
     name, mrp, soldBy, count
 }) => {
-    let text = "" + name + "\n" + "MRP : " + mrp + "\n" + "Sold By : " + soldBy;
+    let text = "*" + name + "*\n" + "MRP : " + mrp + "\n" + "Sold By : " + soldBy;
     if (count) {
         text += "\nQuantity : " + count;
     }
     return text;
 }
+
+const getSelectItemDetails = (allItemDetails, selectedItems) => {
+    const selectItemDetails = [];
+    allItemDetails.forEach((itemData) => {
+        let itemCount = 0;
+        selectedItems.forEach(({ item_unique_id, count }) => {
+            if (itemData.item_unique_id == item_unique_id) {
+                itemCount = count;
+            }
+        });
+
+        if (itemCount > 0) {
+            selectItemDetails.push({
+                ...itemData, count: itemCount
+            })
+        }
+    });
+
+    return selectItemDetails;
+}
+
+// All API Calls.
+const searchForItemsAPI = async (itemName, location) => {
+    let reqBody = {
+        "context": {
+            "domain": retailDomain,
+            "core_version": "0.9.3",
+            "city": "std:080",
+            "country": "IND",
+            "bpp_id": "bpp1.beckn.org",
+            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+        },
+        "message": {
+            "intent": {
+                "item": {
+                    "descriptor": {
+                        "name": itemName
+                    }
+                },
+                "fulfillment": {
+                    "end": {
+                        "location": {
+                            // TODO: make it correct in production.
+                            // // ORG Code.
+                            // "gps": location
+
+                            // Temp Code 1
+                            "gps": "12.4535445,77.9283792"
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/search`,
+            reqBody
+        );
+
+        // console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
+}
+
+const selectAddToCartAPI = async ({
+    transactionId, messageId, providerId, providerLocations, items, bppUri, bppId
+}) => {
+    let reqBody = {
+        "context": {
+            "domain": retailDomain,
+            "country": "IND",
+            "city": "std:080",
+            "core_version": "0.9.3",
+            "transaction_id": transactionId,
+            "message_id": messageId,
+            "bpp_id": bppId,
+            "bpp_uri": bppUri,
+            //TODO: Try removing it.
+            "timestamp": (new Date()).toISOString()
+        },
+        "message": {
+            "order": {
+                "provider": {
+                    "id": providerId,
+                    "locations": providerLocations,
+
+                    // Dummy Data.
+                    // "locations": [
+                    //     {
+                    //         "id": "el"
+                    //     }
+                    // ]
+                },
+                // Dummy Data.
+                // "items": [
+                //     {
+                //         "id": "G-0007",
+                //         "quantity": {
+                //             "count": 1
+                //         }
+                //     }
+                // ],
+
+                items: items
+            }
+        }
+    }
+
+    // console.log(reqBody)
+
+    try {
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/select`,
+            reqBody
+        );
+
+        console.log(response.data)
+        return response.data;
+    } catch (error) {
+        console.log(error)
+        return null;
+    }
+}
+
+const retailDomain = "nic2004:52110";
 
 const retailSteps = {
     location: "location",
@@ -470,14 +593,14 @@ module.exports = {
     msgs: retailMsgs,
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
-    
+
     // Callbacks
     nextRetailItems,
     addToCartCallback,
     checkoutCallback,
     cancelCheckoutCallback,
     proceedCheckoutCallback,
-    
+
     displayItemCount,
     sendItemMessage,
     createProviderId,

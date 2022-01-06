@@ -8,6 +8,7 @@ const replySenderWithImage=async(data, photoURI, isBuffer=true)=>{
         const formData = new FormData();
         formData.append('chat_id', data.chat_id);
         formData.append('caption', data.text);
+        formData.append('parse_mode', 'markdown')
         if(isBuffer){
             // If the provided photo URI is actaully a Buffer.
             formData.append("photo", photoURI, {
