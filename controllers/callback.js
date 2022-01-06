@@ -55,7 +55,8 @@ const callBackController = async (req, res, next) => {
                                 providerId: providerId
                             });
 
-                            providerData.items.forEach((itemData) => {
+                            // save bpp id and uri
+                         providerData.items.forEach((itemData) => {
                                 const itemUniqueId=retail.createItemId({
                                     bpp_id: data.context.bpp_id,
                                     providerId: providerId,
