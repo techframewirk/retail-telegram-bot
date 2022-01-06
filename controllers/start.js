@@ -41,7 +41,7 @@ const setCommands = async () => {
 const webhookController = async (req, res, next) => {
     try {
         const data = req.body
-        console.log(data);
+        // console.log(data);
         if (data.message != undefined) {
             if ((typeof (data.message.entities) != 'undefined') && (data.message.entities[0].type == 'bot_command')) {
                 redis.del(data.message.from.id)

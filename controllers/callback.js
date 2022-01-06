@@ -50,8 +50,8 @@ const callBackController = async (req, res, next) => {
                             const locationData = providerData['locations'];
                             const shopDetails = providerData['descriptor'];
                             const providerId = providerData['id'];
-                            const bppId=data.context.bpp_id;
-                            const bppURI=data.context.bpp_uri;
+                            const bppId = data.context.bpp_id;
+                            const bppURI = data.context.bpp_uri;
                             const providerUniqueId = retail.createProviderId({
                                 bpp_id: bppId,
                                 providerId: providerId
@@ -69,8 +69,8 @@ const callBackController = async (req, res, next) => {
                                     retail_decriptor: shopDetails,
                                     provider_unique_id: providerUniqueId,
                                     provider_id: providerId,
-                                    bpp_id:bppId,
-                                    bpp_uri:bppURI,
+                                    bpp_id: bppId,
+                                    bpp_uri: bppURI,
                                     item_unique_id: itemUniqueId
                                 };
 
@@ -146,8 +146,58 @@ const callBackController = async (req, res, next) => {
                 break
             case 'on_confirm':
                 break;
-            case 'on_select':
-                console.log(data)
+            case 'on_select': {
+                const savedData = await db.getDB().collection('ongoing').findOne({
+                    transaction_id: data.context.transaction_id,
+                    isResolved: false
+                });
+                if (savedData != null) {
+                    // TODO: check whether next step is wait for quote callback or not.
+                    const chat_id = savedData.chat_id;
+                    redis.get(chat_id, async(err, reply)=>{
+                        if(err){
+                            replySender({
+                                chat_id: chat_id,
+                                text: "Something went Wrong"
+                            });
+                            console.log(err)                
+                        }
+                        else{
+                            const cachedData = JSON.parse(reply)
+                            const qouteData = data.message.order.quote;
+                            let qouteText = "Your Order.\n";
+                            qouteData.breakup.forEach((itemData) => {
+                                qouteText += "\n*" + itemData.title + "*\n";
+                                qouteText += "Cost : *Rs. " + itemData.price.value + "*\n";
+                            });
+                            qouteText+="\nTotal : *Rs. "+qouteData.price.value+"*\n";
+                            qouteText+="\nPlease Enter billing details to proceed further.\n";
+                            qouteText+=retail.msgs.billing_name;
+
+                            replySender({
+                                chat_id: chat_id,
+                                text: qouteText
+                            })
+
+                            // Set it in mongo db.
+                            await db.getDB().collection('ongoing').updateOne({
+                                _id: savedData._id
+                            }, {
+                                $set: {
+                                    qoute:qouteData
+                                }
+                            });
+
+                            // Change the next step to billing_name.    
+                            cachedData['nextStep'] = retail.steps.billing_name;
+                            redis.set(chat_id, JSON.stringify(cachedData));        
+                        }
+                    })    
+                }
+                else {
+                    // When Data is not found in mongo.
+                }
+            }
                 break;
             case 'on_update':
                 break

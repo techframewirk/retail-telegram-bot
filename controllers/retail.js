@@ -7,7 +7,64 @@ const { ObjectId } = require('mongodb')
 const callbackUtils = require('../utils/callback')
 
 const handleRetail = async (cachedData, data) => {
+    if (isStepItemCount(cachedData.nextStep)) {
+        // This will handle all item selection count.
+        // TODO: apply validation on integer.
+
+        // TODO: apply validation on providerId,
+        // all items should be from same provider.
+        const count = parseInt(data.message.text);
+        if (data.message.text) {
+            const chat_id = data.message.chat.id;
+            const parts = cachedData.nextStep.split('&&');
+            let itemUniqueId = "";
+            for (let i = 1; i < parts.length; i++) {
+                itemUniqueId += parts[i];
+            }
+
+            cachedData['nextStep'] = retailSteps.itemSelect;
+            let selectedItems = []
+            if (cachedData['selectedItems']) {
+                selectedItems = [...cachedData['selectedItems']];
+            }
+
+            selectedItems.push({
+                item_unique_id: itemUniqueId,
+                count: count
+            });
+            cachedData['selectedItems'] = selectedItems;
+            console.log(cachedData)
+
+            const reply_markup = JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Checkout",
+                            callback_data: callbackUtils.encrypt({
+                                type: 'retail',
+                                commandType: retailCallBackTypes.checkout,
+                                id: cachedData.message_id
+                            })
+                        }
+                    ]
+                ],
+                "resize_keyboard": true,
+                "one_time_keyboard": true
+            })
+            redis.set(chat_id, JSON.stringify(cachedData));
+            replySender({
+                chat_id: chat_id,
+                text: "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
+                reply_markup: reply_markup
+            })
+        }
+
+        return;
+    }
+
     switch (cachedData.nextStep) {
+        // TODO: check whether its one of the steps mention in json or not.
+        // or Item Count.
         case retailSteps.location:
             if (data.message.location) {
                 let updateCachedData = cachedData;
@@ -71,57 +128,6 @@ const handleRetail = async (cachedData, data) => {
 
         }
             break;
-        default: {
-            // This will handle all item selection count.
-            // TODO: apply validation on integer.
-            // TODO: apply validation on providerId,
-            // all items should be from same provider.
-            const count = parseInt(data.message.text);
-            if (data.message.text) {
-                const chat_id = data.message.chat.id;
-                const parts = cachedData.nextStep.split('&&');
-                let itemUniqueId = "";
-                for (let i = 1; i < parts.length; i++) {
-                    itemUniqueId += parts[i];
-                }
-
-                cachedData['nextStep'] = retailSteps.itemSelect;
-                let selectedItems = []
-                if (cachedData['selectedItems']) {
-                    selectedItems = [...cachedData['selectedItems']];
-                }
-
-                selectedItems.push({
-                    item_unique_id: itemUniqueId,
-                    count: count
-                });
-                cachedData['selectedItems'] = selectedItems;
-                console.log(cachedData)
-
-                const reply_markup = JSON.stringify({
-                    inline_keyboard: [
-                        [
-                            {
-                                text: "Checkout",
-                                callback_data: callbackUtils.encrypt({
-                                    type: 'retail',
-                                    commandType: retailCallBackTypes.checkout,
-                                    id: cachedData.message_id
-                                })
-                            }
-                        ]
-                    ],
-                    "resize_keyboard": true,
-                    "one_time_keyboard": true
-                })
-                redis.set(chat_id, JSON.stringify(cachedData));
-                replySender({
-                    chat_id: chat_id,
-                    text: "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
-                    reply_markup: reply_markup
-                })
-            }
-        }
     }
 }
 
@@ -293,6 +299,14 @@ const checkoutCallback = async (chat_id, messageId) => {
                     message_id: messageId
                 });
 
+                if (!cachedData.selectedItems) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: "Invalid Call..."
+                    });
+                    return;
+                }
+
                 const selectItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
 
                 // Add button for proceed and cancel.
@@ -367,12 +381,20 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
             console.log(err)
         } else {
             // TODO: check the next step.
-            // if it is select item, then only allow.
+            // if it is proceed checkout, then only allow.
             const cachedData = JSON.parse(reply)
 
             const savedData = await db.getDB().collection('ongoing').findOne({
                 message_id: messageId
             });
+
+            if (!cachedData.selectedItems) {
+                replySender({
+                    chat_id: chat_id,
+                    text: "Invalid Call..."
+                });
+                return;
+            }
 
             const transactionId = savedData.transaction_id;
             const selectedItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
@@ -404,33 +426,35 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
                 bppUri: bppUri, bppId: bppId
             });
 
-            // TODO: change the next step.
-            // Send message regarding the order.
+            if (addToCartResp) {
+                // TODO: change the next step in cache.
+                // Send message regarding the order.
+
+                cachedData['nextStep'] = retailSteps.waitForQouteCallback;
+                redis.set(chat_id, JSON.stringify(cachedData));
+
+                // TODO: Implement this in prod.
+                // await db.getDB().collection('ongoing').updateOne({
+                //     _id: savedData._id
+                // }, {
+                //     $set: {
+                //         message_id:addToCartResp.context.message_id
+                //     }
+                // });
+
+                replySender({
+                    chat_id:chat_id,
+                    text:retailMsgs.proceedCheckout
+                });
+            }
+            else {
+                replySender({
+                    chat_id: chat_id,
+                    text: "Something went wrong."
+                });
+            }
         }
     });
-}
-
-// Util Functions.
-const createProviderId = ({
-    bpp_id, providerId
-}) => {
-    return bpp_id + " " + providerId;
-}
-
-const createItemId = ({
-    bpp_id, providerId, itemId
-}) => {
-    return bpp_id + " " + providerId + " " + itemId;
-}
-
-const getRetailItemText = ({
-    name, mrp, soldBy, count
-}) => {
-    let text = "*" + name + "*\n" + "MRP : " + mrp + "\n" + "Sold By : " + soldBy;
-    if (count) {
-        text += "\nQuantity : " + count;
-    }
-    return text;
 }
 
 const getSelectItemDetails = (allItemDetails, selectedItems) => {
@@ -553,7 +577,9 @@ const selectAddToCartAPI = async ({
             reqBody
         );
 
-        console.log(response.data)
+        // console.log("Message ID:", messageId, response.data.context.message_id);
+        // console.log("Txn ID:", transactionId, response.data.context.transaction_id);
+        // console.log(JSON.stringify(response.data))
         return response.data;
     } catch (error) {
         console.log(error)
@@ -563,6 +589,38 @@ const selectAddToCartAPI = async ({
 
 const retailDomain = "nic2004:52110";
 
+const isStepItemCount = (stepValue) => {
+    const parts = stepValue.split("&&");
+    if (parts.length <= 1) {
+        return false;
+    }
+
+    return (parts[0] == "itemCount")
+}
+
+// Util Functions.
+const createProviderId = ({
+    bpp_id, providerId
+}) => {
+    return bpp_id + " " + providerId;
+}
+
+const createItemId = ({
+    bpp_id, providerId, itemId
+}) => {
+    return bpp_id + " " + providerId + " " + itemId;
+}
+
+const getRetailItemText = ({
+    name, mrp, soldBy, count
+}) => {
+    let text = "*" + name + "*\n" + "MRP : " + mrp + "\n" + "Sold By : " + soldBy;
+    if (count) {
+        text += "\nQuantity : " + count;
+    }
+    return text;
+}
+
 const retailSteps = {
     location: "location",
     itemName: "itemName",
@@ -570,7 +628,34 @@ const retailSteps = {
     itemCountStep: (itemUniqueId) => {
         return "itemCount&&" + itemUniqueId
     },
-    proceedCheckout: "proceedCheckout"
+    proceedCheckout: "proceedCheckout",
+    waitForQouteCallback: "waitForQouteCallback",
+
+    // Billing Info.
+    billing_name: "billing_name",
+    billing_phone: "billing_phone",
+
+    // Billing address Info.
+    billing_address_flat_no: "billing_address_flat_no",
+    billing_address_building: "billing_address_building",
+    billing_address_street: "billing_address_street",
+    billing_address_city: "billing_address_city",
+    billing_address_state: "billing_address_state",
+    billing_address_country: "billing_address_country",
+    billing_address_area_code: "billing_address_area_code",
+
+    // Shipping Info.
+    shipping_location: "shipping_location",
+    shipping_email: "shipping_email",
+    shipping_phone: "shipping_phone",
+
+    shipping_address_flat_no: "shipping_address_flat_no",
+    shipping_address_building: "shipping_address_building",
+    shipping_address_street: "shipping_address_street",
+    shipping_address_city: "shipping_address_city",
+    shipping_address_state: "shipping_address_state",
+    shipping_address_country: "shipping_address_country",
+    shipping_address_area_code: "shipping_address_area_code"
 }
 
 const retailCallBackTypes = {
@@ -587,7 +672,10 @@ const retailMsgs = {
     location: "Hi! Where do you want to get your items delivered to today?",
     itemName: "Thanks! What would you like to buy?",
     itemSelect: "Here’s what I found near you: ",
-    itemCountStep: "Please enter the quantity."
+    itemCountStep: "Please enter the quantity.",
+    proceedCheckout: "Please hang on while we preceeding with your order.",
+
+    billing_name:"Please Enter your billing name."
 }
 
 module.exports = {
