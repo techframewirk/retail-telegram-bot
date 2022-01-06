@@ -7,7 +7,7 @@ const replySenderWithImage = require('./replySenderWithImage')
 const replySenderWithImageFromPath = require('./replySenderWithImageFromPath')
 const path = require('path');
 const retail = require('./retail')
-const callbackUtils=require('./../utils/callback')
+const callbackUtils = require('./../utils/callback')
 
 const callBackController = async (req, res, next) => {
     try {
@@ -34,27 +34,44 @@ const callBackController = async (req, res, next) => {
                     if ((data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
                         const bpp_providers = data.message.catalog['bpp/providers'];
                         let itemDetails = [];
+                        let allItemDetails = [];
 
                         let toDisplayItems = false;
                         if (savedData.itemDetails) {
                             itemDetails = [...savedData.itemDetails];
+                            allItemDetails = [...savedData.allItemDetails];
                         }
                         else {
+                            // First Callback.
                             toDisplayItems = true;
                         }
 
                         bpp_providers.forEach((providerData) => {
                             const locationData = providerData['locations'];
                             const shopDetails = providerData['descriptor'];
-                            const providerId = providerData['id'];
+                            const providerId=providerData['id'];
+                            const providerUniqueId = retail.createProviderId({
+                                bpp_id: data.context.bpp_id, 
+                                providerId: providerId
+                            });
 
                             providerData.items.forEach((itemData) => {
-                                itemDetails.push({
+                                const itemUniqueId=retail.createItemId({
+                                    bpp_id: data.context.bpp_id,
+                                    providerId: providerId,
+                                    itemId: itemData.id
+                                });
+                                const itemDetail={
                                     ...itemData,
                                     retail_location: locationData,
                                     retail_decriptor: shopDetails,
-                                    providerId: providerId
-                                });
+                                    provider_unique_id: providerUniqueId,
+                                    providerId: providerId,
+                                    item_unique_id:itemUniqueId
+                                };
+
+                                itemDetails.push(itemDetail);
+                                allItemDetails.push(itemDetail);
                             });
                         });
 
@@ -71,17 +88,18 @@ const callBackController = async (req, res, next) => {
                             }
                         }
 
-                        
+
                         // Saving the rest of items in DB.
                         await db.getDB().collection('ongoing').updateOne({
-                            _id:savedData._id
+                            _id: savedData._id
                         }, {
-                            $set:{
-                                itemDetails:itemDetails
+                            $set: {
+                                itemDetails: itemDetails,
+                                allItemDetails: allItemDetails
                             }
                         });
-                        
-                        if(itemsToDisplay.length>0){
+
+                        if (itemsToDisplay.length > 0) {
                             // Sending Items.
                             await retail.sendItemMessage(itemsToDisplay, savedData.chat_id);
 
@@ -96,8 +114,8 @@ const callBackController = async (req, res, next) => {
                                             {
                                                 text: "Next",
                                                 callback_data: callbackUtils.encrypt({
-                                                    type:'retail',
-                                                    commandType: retail.callbackTypes.next, 
+                                                    type: 'retail',
+                                                    commandType: retail.callbackTypes.next,
                                                     id: savedData._id
                                                 })
                                             }
@@ -108,10 +126,10 @@ const callBackController = async (req, res, next) => {
                                 })
                             });
                         }
-                        else{
+                        else {
                             replySender({
-                                chat_id:savedData.chat_id,
-                                text:"Currently No matching items available."
+                                chat_id: savedData.chat_id,
+                                text: "Currently No matching items available."
                             });
                         }
                     }

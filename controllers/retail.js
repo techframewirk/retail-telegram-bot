@@ -31,17 +31,18 @@ const handleRetail = async (cachedData, data) => {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemSelect;
                 updateCachedData[retailSteps.itemName] = data.message.text;
-                redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
 
                 // TODO: call the API.
                 const retailSearchResp = await searchForRetail(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
                 if (retailSearchResp) {
-                    updateCachedData['onSearchTrigger'] = retailSearchResp;
-                    updateCachedData['isResolved'] = false;
                     updateCachedData['transaction_id'] = retailSearchResp.context.transaction_id;
                     updateCachedData['message_id'] = retailSearchResp.context.message_id;
                     updateCachedData['callingTime'] = retailSearchResp.context.timestamp;
+                    redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
 
+                    updateCachedData['onSearchTrigger'] = retailSearchResp;
+                    updateCachedData['isResolved'] = false;
+                    
                     await db.getDB().collection('ongoing').insertOne(updateCachedData);
 
                     replySender({
@@ -63,6 +64,55 @@ const handleRetail = async (cachedData, data) => {
                 });
             }
             break;
+        
+        default:{
+            // This will handle all item selection count.
+            // TODO: apply validation on integer.
+            const count=parseInt(data.message.text);
+            if(data.message.text){
+                const chat_id=data.message.chat.id;
+                const parts=cachedData.nextStep.split('&&');
+                let itemUniqueId="";
+                for(let i=1; i<parts.length; i++){
+                    itemUniqueId+=parts[i];
+                }
+                
+                cachedData['nextStep']=retailSteps.itemSelect;
+                let selectedItems=[]
+                if(cachedData['selectedItems']){
+                    selectedItems=[...cachedData['selectedItems']];
+                }
+                
+                selectedItems.push({
+                    item_unique_id:itemUniqueId,
+                    count:count
+                });
+                cachedData['selectedItems']=selectedItems;
+
+                const reply_markup = JSON.stringify({
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "Checkout",
+                                callback_data: callbackUtils.encrypt({
+                                    type:'retail',
+                                    commandType: retailCallBackTypes.checkout,
+                                    id: cachedData.message_id
+                                })
+                            }
+                        ]
+                    ],
+                    "resize_keyboard": true,
+                    "one_time_keyboard": true
+                })
+                redis.set(chat_id, JSON.stringify(cachedData));
+                replySender({
+                    chat_id:chat_id,
+                    text: "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
+                    reply_markup:reply_markup
+                })
+            }
+        }
     }
 }
 
@@ -132,26 +182,6 @@ const nextRetailItems = async (data, callbackData) => {
     }
 }
 
-const retailSteps = {
-    location: "location",
-    itemName: "itemName",
-    itemSelect: "itemSelect",
-    checkout: "checkout"
-}
-
-const retailCallBackTypes={
-    next:"Next",
-    addToCart:"AddToCart"
-}
-
-// These are the text messages for each step.
-// Like when asking for location use location msg.
-const retailMsgs = {
-    location: "Hi! Where do you want to get your items delivered to today?",
-    itemName: "Thanks! What would you like to buy?",
-    itemSelect: "Here’s what I found near you: "
-}
-
 const searchForRetail = async (itemName, location) => {
     let reqBody = {
         "context": {
@@ -215,7 +245,7 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
                         callback_data: callbackUtils.encrypt({
                             type:'retail',
                             commandType: retailCallBackTypes.addToCart,
-                            id: itemData.id
+                            id: itemData.item_unique_id
                         })
                     }
                 ]
@@ -256,10 +286,74 @@ const sendItemMessage=async(itemsToDisplay, chat_id)=>{
 
 const displayItemCount=1;
 
+const createProviderId=({
+    bpp_id, providerId
+})=>{
+    return bpp_id+" "+providerId;
+}
+
+const createItemId=({
+    bpp_id, providerId, itemId
+})=>{
+    return bpp_id+" "+providerId+" "+itemId;
+}
+
+const addToCartCallback=async(chat_id, itemUniqueId)=>{
+    console.log(chat_id)
+    try {
+        console.log(itemUniqueId)
+        redis.get(chat_id, async (err, reply) => {
+            if (err) {
+                replySender({
+                    chat_id:chat_id,
+                    text:"Something went Wrong"
+                });
+                console.log(err)
+            } else {
+                const cachedData = JSON.parse(reply)
+                cachedData['nextStep']=retailSteps.itemCountStep(itemUniqueId);
+                redis.set(chat_id, JSON.stringify(cachedData));
+                replySender({
+                    chat_id:chat_id,
+                    text:retailMsgs.itemCountStep
+                });
+            }
+        });
+
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 const getRetailItemText = ({
     short_desc, mrp, soldBy
 }) => {
     return short_desc + "\n" + "MRP: " + mrp + "\n" + "Slod By: " + soldBy;
+}
+
+const retailSteps = {
+    location: "location",
+    itemName: "itemName",
+    itemSelect: "itemSelect",
+    itemCountStep: (itemUniqueId)=>{
+        return "itemCount&&"+itemUniqueId
+    },
+    checkout: "checkout"
+}
+
+const retailCallBackTypes={
+    next:"Next",
+    addToCart:"AddToCart",
+    checkout:"CheckOut"
+}
+
+// These are the text messages for each step.
+// Like when asking for location use location msg.
+const retailMsgs = {
+    location: "Hi! Where do you want to get your items delivered to today?",
+    itemName: "Thanks! What would you like to buy?",
+    itemSelect: "Here’s what I found near you: ",
+    itemCountStep: "Please enter the quantity."
 }
 
 module.exports = {
@@ -269,6 +363,9 @@ module.exports = {
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
     nextRetailItems,
+    addToCartCallback,
     displayItemCount,
-    sendItemMessage
+    sendItemMessage,
+    createProviderId, 
+    createItemId
 };

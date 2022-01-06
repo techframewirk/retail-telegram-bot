@@ -4,7 +4,6 @@ const fs=require('fs');
 
 const replySenderWithImage=async(data, photoURI, isBuffer=true)=>{
     try {
-        
         const url=`${process.env.telegramURL}/bot${process.env.telegramToken}/sendPhoto`;
         const formData = new FormData();
         formData.append('chat_id', data.chat_id);
