@@ -1,6 +1,8 @@
 const db = require('../utils/mongo')
+const {ObjectID} =require('mongodb')
 const axios = require('axios').default
 const redis = require('../utils/redis')
+const ioredis = require('../utils/ioredis')
 const imageUtils = require('./../utils/imageUtils');
 const replySender = require('./replySender');
 const replySenderWithImage = require('./replySenderWithImage')
@@ -21,125 +23,69 @@ const callBackController = async (req, res, next) => {
                     message_id: data.context.message_id,
                     isResolved: false
                 })
-                if (savedData != null) {
-                    // await db.getDB().collection('ongoing').updateOne({
-                    //     _id: savedData._id
-                    // }, {
-                    //     $set: {
-                    //         onSearchTriggerResult: savedData.onSearchTriggerResult === undefined ? [data] : [...savedData.onSearchTriggerResult, data]
-                    //     }
-                    // })
-
+                if ((savedData)&&(data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
                     // When Data is found in mongo.
-                    if ((data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
-                        const bpp_providers = data.message.catalog['bpp/providers'];
-                        let itemDetails = [];
-                        let allItemDetails = [];
+                    const bpp_providers = data.message.catalog['bpp/providers'];
+                    let itemDetails = [];
 
-                        let toDisplayItems = false;
-                        if (savedData.itemDetails) {
-                            itemDetails = [...savedData.itemDetails];
-                            allItemDetails = [...savedData.allItemDetails];
-                        }
-                        else {
-                            // First Callback.
-                            toDisplayItems = true;
-                        }
+                    let toDisplayItems = false;
+                    if (!savedData.items) {
+                        toDisplayItems = true;
+                    }
 
-                        bpp_providers.forEach((providerData) => {
-                            const locationData = providerData['locations'];
-                            const shopDetails = providerData['descriptor'];
-                            const providerId = providerData['id'];
-                            const bppId = data.context.bpp_id;
-                            const bppURI = data.context.bpp_uri;
-                            const providerUniqueId = retail.createProviderId({
-                                bpp_id: bppId,
-                                providerId: providerId
-                            });
-
-                            providerData.items.forEach((itemData) => {
-                                const itemUniqueId = retail.createItemId({
-                                    bpp_id: bppId,
-                                    providerId: providerId,
-                                    itemId: itemData.id
-                                });
-                                const itemDetail = {
-                                    ...itemData,
-                                    retail_location: locationData,
-                                    retail_decriptor: shopDetails,
-                                    provider_unique_id: providerUniqueId,
-                                    provider_id: providerId,
-                                    bpp_id: bppId,
-                                    bpp_uri: bppURI,
-                                    item_unique_id: itemUniqueId
-                                };
-
-                                itemDetails.push(itemDetail);
-                                allItemDetails.push(itemDetail);
-                            });
+                    const chat_id=savedData.chat_id;
+                    bpp_providers.forEach((providerData) => {
+                        const locationData = providerData['locations'];
+                        const shopDetails = providerData['descriptor'];
+                        const providerId = providerData['id'];
+                        const bppId = data.context.bpp_id;
+                        const bppURI = data.context.bpp_uri;
+                        const providerUniqueId = retail.createProviderId({
+                            bpp_id: bppId,
+                            providerId: providerId
                         });
 
-                        let countofItemToDisplay = retail.displayItemCount;
-                        let itemsToDisplay = [];
-                        if (toDisplayItems) {
-                            if (itemDetails.length > countofItemToDisplay) {
-                                itemsToDisplay = itemDetails.slice(0, countofItemToDisplay);
-                                itemDetails = itemDetails.slice(countofItemToDisplay);
-                            }
-                            else {
-                                itemsToDisplay = itemDetails;
-                                itemDetails = [];
-                            }
-                        }
+                        providerData.items.forEach((itemData) => {
+                            const itemUniqueId = retail.createItemId({
+                                bpp_id: bppId,
+                                providerId: providerId,
+                                itemId: itemData.id
+                            });
+                            const itemDetail = {
+                                ...itemData,
+                                retail_location: locationData,
+                                retail_decriptor: shopDetails,
+                                provider_unique_id: providerUniqueId,
+                                provider_id: providerId,
+                                bpp_id: bppId,
+                                bpp_uri: bppURI,
+                                item_unique_id: itemUniqueId,
+                                _id: ObjectID(),
+                            };
 
+                            itemDetails.push(itemDetail);
+                        });
+                    });
 
-                        // Saving the rest of items in DB.
+                    itemDetails.forEach(async (itemData)=>{
                         await db.getDB().collection('ongoing').updateOne({
                             _id: savedData._id
                         }, {
-                            $set: {
-                                itemDetails: itemDetails,
-                                allItemDetails: allItemDetails
+                            $addToSet: {
+                                items: itemData
                             }
-                        });
+                        })
+                    });
 
-                        if (itemsToDisplay.length > 0) {
-                            // Sending Items.
-                            await retail.sendItemMessage(itemsToDisplay, savedData.chat_id);
+                    itemDetails.forEach(async(itemData)=>{
+                        await ioredis.rpush("chat_id"+chat_id, JSON.stringify(itemData));
+                    });
+                    
+                    if(toDisplayItems){    
+                        retail.sendItemMessage(chat_id);
+                    }
 
-                            // TODO: Take a look at its position.
-                            // Next button.
-                            replySender({
-                                chat_id: savedData.chat_id,
-                                text: "To view More Items",
-                                reply_markup: JSON.stringify({
-                                    inline_keyboard: [
-                                        [
-                                            {
-                                                text: "Next",
-                                                callback_data: callbackUtils.encrypt({
-                                                    type: 'retail',
-                                                    commandType: retail.callbackTypes.next,
-                                                    id: savedData._id
-                                                })
-                                            }
-                                        ]
-                                    ],
-                                    "resize_keyboard": true,
-                                    "one_time_keyboard": true
-                                })
-                            });
-                        }
-                        else {
-                            replySender({
-                                chat_id: savedData.chat_id,
-                                text: "Currently No matching items available."
-                            });
-                        }
-                    }
-                    else {
-                        console.log("Data from Unknown Domain...");
-                    }
+                    console.log(await ioredis.llen("chat_id"+chat_id))
                 } else {
                     // When Data is not found in mongo.
                 }
@@ -153,10 +99,7 @@ const callBackController = async (req, res, next) => {
 
                 
                 // console.log(JSON.stringify(data))
-
                 if (savedData != null) {
-                    // TODO: check whether next step is wait for quote callback or not.
-
                     const chat_id = savedData.chat_id;
                     redis.get(chat_id, async (err, reply) => {
                         if (err) {
@@ -168,6 +111,12 @@ const callBackController = async (req, res, next) => {
                         }
                         else {
                             const cachedData = JSON.parse(reply)
+                            // checking whether next step is wait for quote callback or not.
+                            if(cachedData.nextStep!=retail.steps.waitForQouteCallback){
+                                // Returning because current step is not wait for qoute callback.
+                                return;
+                            }
+
                             const qouteData = data.message.order.quote;
                             let qouteText = "Your Order.\n";
                             qouteData.breakup.forEach((itemData) => {

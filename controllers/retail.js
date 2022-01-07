@@ -1,5 +1,6 @@
 const axios = require('axios').default
 const redis = require('../utils/redis')
+const ioredis = require('../utils/ioredis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
 const replySenderWithImage = require('./replySenderWithImage')
@@ -97,7 +98,8 @@ const handleRetail = async (cachedData, data) => {
                     updateCachedData['onSearchTrigger'] = retailSearchResp;
                     updateCachedData['isResolved'] = false;
 
-                    await db.getDB().collection('ongoing').insertOne(updateCachedData);
+                    const tempData = await db.getDB().collection('ongoing').insertOne(updateCachedData);
+                    console.log(tempData)
 
                     replySender({
                         chat_id: data.message.chat.id,
@@ -202,7 +204,7 @@ const handleRetail = async (cachedData, data) => {
                 const billingInfo = cachedData['billing'];
                 billingInfo['address'] = {
                     "door": data.message.text,
-                    "country":"IND"
+                    "country": "IND"
                 };
 
                 cachedData['billing'] = billingInfo;
@@ -348,7 +350,7 @@ const handleRetail = async (cachedData, data) => {
                             "location": {
                                 "gps": "Place location here.",
                                 "address": {
-                                    "country":"IND"
+                                    "country": "IND"
                                 }
                             },
                             "contact": {}
@@ -578,9 +580,8 @@ const handleRetail = async (cachedData, data) => {
                 });
 
                 console.log(initOrderResp)
-                // TODO: uncomment this once done testing.
-                // cachedData['nextStep']=retailSteps.waitForInitCallback;
-                // redis.set(data.message.chat.id, JSON.stringify(cachedData))
+                cachedData['nextStep'] = retailSteps.waitForInitCallback;
+                redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
                     text: retailMsgs.waitForInitCallback,
@@ -596,74 +597,29 @@ const handleRetail = async (cachedData, data) => {
     }
 }
 
-const nextRetailItems = async (data, savedDataId) => {
+const nextRetailItems = async (chat_id) => {
+    // TODO: just use the redis queues.
     try {
-        const savedData = await db.getDB().collection('ongoing').findOne({
-            _id: ObjectId(savedDataId)
-        })
-
-        let itemsToDisplay = [];
-        let itemDetails = [...savedData.itemDetails];
-        if (itemDetails.length > displayItemCount) {
-            itemsToDisplay = itemDetails.slice(0, displayItemCount);
-            itemDetails = itemDetails.slice(displayItemCount);
-        }
-        else {
-            itemsToDisplay = itemDetails;
-            itemDetails = [];
-        }
-
-        if (itemsToDisplay.length > 0) {
-            // Sending the message.
-            await sendItemMessage(itemsToDisplay, savedData.chat_id)
-
-            // TODO: Take a look at its position.
-            // Next button.
-            replySender({
-                chat_id: savedData.chat_id,
-                text: "To view More Items",
-                reply_markup: JSON.stringify({
-                    inline_keyboard: [
-                        [
-                            {
-                                text: "Next",
-                                callback_data: callbackUtils.encrypt({
-                                    type: 'retail',
-                                    commandType: retailCallBackTypes.next,
-                                    id: savedData._id
-                                })
-                            }
-                        ]
-                    ],
-                    "resize_keyboard": true,
-                    "one_time_keyboard": true
-                })
-            });
+        if (await ioredis.llen("chat_id" + chat_id) > 0) {
+            await sendItemMessage(chat_id)
         }
         else {
             replySender({
-                chat_id: savedData.chat_id,
+                chat_id: chat_id,
                 text: "Currently No more matching items available."
             });
         }
-
-        // Saving the rest of items in DB.
-        await db.getDB().collection('ongoing').updateOne({
-            _id: savedData._id
-        }, {
-            $set: {
-                itemDetails: itemDetails
-            }
-        });
-
     } catch (error) {
         console.log(error)
     }
 }
 
-const sendItemMessage = async (itemsToDisplay, chat_id) => {
-    const promises = [];
-    itemsToDisplay.forEach(async (itemData) => {
+const sendItemMessage = async (chat_id) => {
+    console.log(await ioredis.llen("chat_id" + chat_id));
+
+    let itemCount = 0;
+    while ((itemCount < displayItemCount) && (await ioredis.llen("chat_id" + chat_id))) {
+        const itemData = JSON.parse(await ioredis.lpop("chat_id" + chat_id));
         const displayText = getRetailItemText({
             mrp: "Rs. " + itemData.price.value,
             name: itemData.descriptor.name,
@@ -693,31 +649,48 @@ const sendItemMessage = async (itemsToDisplay, chat_id) => {
         }
 
         if (imgURL) {
-            promises.push(new Promise(async (resolve, reject) => {
-                await replySenderWithImage({
-                    chat_id: chat_id,
-                    text: displayText,
-                    reply_markup: reply_markup
-                }, imgURL, false);
-                resolve("Success");
-            }));
+            await replySenderWithImage({
+                chat_id: chat_id,
+                text: displayText,
+                reply_markup: reply_markup
+            }, imgURL, false);
         }
         else {
-            promises.push(new Promise(async (resolve, reject) => {
-                await replySender({
-                    chat_id: chat_id,
-                    text: displayText,
-                    reply_markup: reply_markup
-                });
-                resolve("Success")
-            }))
+            await replySender({
+                chat_id: chat_id,
+                text: displayText,
+                reply_markup: reply_markup
+            });
         }
-    });
 
-    const res = await Promise.all(promises);
+        itemCount++;
+    }
+
+    if (await ioredis.llen("chat_id" + chat_id) > 0) {
+        replySender({
+            chat_id: chat_id,
+            text: "To view More Items",
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Next",
+                            callback_data: callbackUtils.encrypt({
+                                type: 'retail',
+                                commandType: retailCallBackTypes.next,
+                                id: chat_id
+                            })
+                        }
+                    ]
+                ],
+                "resize_keyboard": true,
+                "one_time_keyboard": true
+            })
+        });
+    }
 }
 
-const displayItemCount = 1;
+const displayItemCount = 2;
 
 const addToCartCallback = async (chat_id, itemUniqueId) => {
     try {
@@ -945,7 +918,7 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
 
 const cancelConfirmCallback = async (chat_id, transaction_id) => {
     // TODO: check the state for state Order Confirmation
-    
+
     redis.get(chat_id, async (err, reply) => {
         if (err) {
             replySender({
@@ -957,12 +930,12 @@ const cancelConfirmCallback = async (chat_id, transaction_id) => {
             // TODO: check the next step.
             // if it is proceed checkout, then only allow.
             const cachedData = JSON.parse(reply)
-        
+
             cachedData['nextStep'] = retailSteps.itemSelect;
             redis.set(chat_id, JSON.stringify(cachedData));
             replySender({
-                chat_id:chat_id,
-                text:"Your items are still saved in the cart.\nYou can add more items and place an order."
+                chat_id: chat_id,
+                text: "Your items are still saved in the cart.\nYou can add more items and place an order."
             });
         }
     });
@@ -1088,8 +1061,8 @@ const searchForItemsAPI = async (itemName, location) => {
             "core_version": "0.9.3",
             "city": "std:080",
             "country": "IND",
-            "bpp_id": "bpp1.beckn.org",
-            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+            // "bpp_id": "bpp1.beckn.org",
+            // "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
         },
         "message": {
             "intent": {
@@ -1440,7 +1413,7 @@ const retailMsgs = {
     shipping_location: "Please share your shipping location.",
 
     waitForInitCallback: "We have initiated the your order.\nPlease wait for a moment.",
-    waitForConfirmCallback:"We are creating your order.\nPlease wait for a moment."
+    waitForConfirmCallback: "We are creating your order.\nPlease wait for a moment."
 }
 
 module.exports = {
