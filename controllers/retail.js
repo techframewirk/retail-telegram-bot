@@ -1061,8 +1061,8 @@ const searchForItemsAPI = async (itemName, location) => {
             "core_version": "0.9.3",
             "city": "std:080",
             "country": "IND",
-            "bpp_id": "bpp1.beckn.org",
-            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+            // "bpp_id": "bpp1.beckn.org",
+            // "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
             
             // "bpp_id": "mindy.succinct.in",
             // "bpp_uri": "https://beckn-one.succinct.in/bg/"
