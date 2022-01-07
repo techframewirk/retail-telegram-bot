@@ -1,0 +1,155 @@
+{
+    "context": {
+        "domain": "nic2021:52110",
+        "country": "IND",
+        "city": "std:8080",
+        "action": "on_confirm",
+        "core_version": "0.9.3",
+        "bap_id": "qa.api.box.beckn.org",
+        "bap_uri": "https://9650-27-62-144-87.ngrok.io/protocol/",
+        "transaction_id": "6a2e06c7-0f74-492a-a519-6acfb01a2830",
+        "message_id": "f932ce6a-aefa-4dbf-a096-dbf592959424",
+        "timestamp": "2022-01-07T11:10:16Z",
+        "ttl": "P1M",
+        "bpp_id": "bpp1.beckn.org",
+        "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+    },
+    "message": {
+        "order": {
+            "id": "2000000412",
+            "state": "Pending",
+            "provider": {
+                "id": "453678",
+                "descriptor": {
+                    "name": "Grocery Retail",
+                    "short_desc": "Grocery Retail Product.",
+                    "images": [
+                        "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                    ]
+                },
+                "locations": [
+                    {
+                        "id": "el",
+                        "gps": "12.891704, 77.576873",
+                        "address": {
+                            "door": "",
+                            "name": "Address Name",
+                            "building": "West side",
+                            "street": "lsts 354537",
+                            "locality": "",
+                            "state": "Bangalore",
+                            "country": "IND",
+                            "area_code": "160002"
+                        },
+                        "station_code": "160002",
+                        "city": {
+                            "name": "Bangalore",
+                            "code": "Bangalore"
+                        },
+                        "country": {
+                            "name": "IND",
+                            "code": "IN"
+                        }
+                    }
+                ]
+            },
+            "provider_location": {
+                "id": "el"
+            },
+            "items": [
+                {
+                    "id": "G-0002",
+                    "quantity": {
+                        "count": 8
+                    }
+                }
+            ],
+            "billing": {
+                "name": "Ayush Agrawal",
+                "phone": "918085873059",
+                "address": {
+                    "door": "78",
+                    "country": "IND",
+                    "building": "Narendra Niketan",
+                    "street": "Madhuban Road",
+                    "city": "Bangalore",
+                    "state": "Karnataka",
+                    "area_code": "560078"
+                },
+                "email": "agrawal.ayush2500@gmail.com"
+            },
+            "fulfillment": {
+                "type": "store-pickup",
+                "tracking": false,
+                "start": {
+                    "location": {
+                        "id": "el",
+                        "descriptor": {
+                            "name": "Grocery Retail",
+                            "short_desc": "Grocery Retail Product.",
+                            "images": [
+                                "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                            ]
+                        },
+                        "gps": "12.891704, 77.576873"
+                    },
+                    "contact": {
+                        "phone": "supportbpp1@nomail.com",
+                        "email": "+919999999999"
+                    }
+                },
+                "end": {
+                    "location": {
+                        "gps": "Place location here.",
+                        "address": {
+                            "door": "78",
+                            "country": "IND",
+                            "building": "Narendra Niketan",
+                            "street": "Madhuban Road",
+                            "city": "Bangalore",
+                            "state": "Karnataka",
+                            "area_code": "560078"
+                        }
+                    },
+                    "contact": {
+                        "phone": "918085873059",
+                        "email": "agrawal.ayush2500@gmail.com"
+                    }
+                }
+            },
+            "quote": {
+                "price": {
+                    "currency": "INR",
+                    "value": 1744
+                },
+                "breakup": [
+                    {
+                        "title": "G Fresh Royal Gala Apple",
+                        "price": {
+                            "currency": "INR",
+                            "value": 1704
+                        }
+                    },
+                    {
+                        "title": "FULFILLMENT",
+                        "price": {
+                            "currency": "INR",
+                            "value": 40
+                        }
+                    }
+                ]
+            },
+            "payment": {
+                "params": {
+                    "amount": 1744,
+                    "currency": "INR"
+                },
+                "type": "ON-FULFILLMENT",
+                "status": "NOT-PAID"
+            },
+            "created_at": "2022-01-07T11:10:17Z",
+            "updated_at": "2022-01-07T11:10:17Z"
+        }
+    },
+    "_id": "61d81f9c3ad8b6dd25efed31"
+}

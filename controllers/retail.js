@@ -270,22 +270,6 @@ const handleRetail = async (cachedData, data) => {
                 billingInfo['address']['state'] = data.message.text;
 
                 cachedData['billing'] = billingInfo;
-                cachedData['nextStep'] = retailSteps.billing_address_country;
-                redis.set(data.message.chat.id, JSON.stringify(cachedData))
-                replySender({
-                    chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_country,
-                });
-            }
-            break;
-
-        case retailSteps.billing_address_country:
-            if (data.message.text) {
-                // TODO: apply validation.
-                const billingInfo = cachedData['billing'];
-                billingInfo['address']['country'] = data.message.text;
-
-                cachedData['billing'] = billingInfo;
                 cachedData['nextStep'] = retailSteps.billing_address_area_code;
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
@@ -508,22 +492,6 @@ const handleRetail = async (cachedData, data) => {
                 // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['state'] = data.message.text;
-
-                cachedData['fulfillment'] = fulfillmentInfo;
-                cachedData['nextStep'] = retailSteps.shipping_address_country;
-                redis.set(data.message.chat.id, JSON.stringify(cachedData))
-                replySender({
-                    chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_country,
-                });
-            }
-            break;
-
-        case retailSteps.shipping_address_country:
-            if (data.message.text) {
-                // TODO: apply validation.
-                const fulfillmentInfo = cachedData['fulfillment'];
-                fulfillmentInfo['end']["location"]['address']['country'] = data.message.text;
 
                 cachedData['fulfillment'] = fulfillmentInfo;
                 cachedData['nextStep'] = retailSteps.shipping_address_area_code;
@@ -977,7 +945,27 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
 
 const cancelConfirmCallback = async (chat_id, transaction_id) => {
     // TODO: check the state for state Order Confirmation
-    console.log(transaction_id)
+    
+    redis.get(chat_id, async (err, reply) => {
+        if (err) {
+            replySender({
+                chat_id: chat_id,
+                text: "Something went Wrong"
+            });
+            console.log(err)
+        } else {
+            // TODO: check the next step.
+            // if it is proceed checkout, then only allow.
+            const cachedData = JSON.parse(reply)
+        
+            cachedData['nextStep'] = retailSteps.itemSelect;
+            redis.set(chat_id, JSON.stringify(cachedData));
+            replySender({
+                chat_id:chat_id,
+                text:"Your items are still saved in the cart.\nYou can add more items and place an order."
+            });
+        }
+    });
 }
 const confirmOrderCallback = async (chat_id, transactionId) => {
     // TODO: check the state for state Order Confirmation
@@ -1307,7 +1295,7 @@ const confirmOrderAPI = async ({
         }
     };
 
-    console.log(JSON.stringify(reqBody))
+    // console.log(JSON.stringify(reqBody))
 
     try {
         const response = await axios.post(
@@ -1461,6 +1449,7 @@ module.exports = {
     msgs: retailMsgs,
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
+    getSelectItemDetails,
 
     // Callbacks
     nextRetailItems,

@@ -274,10 +274,75 @@ const callBackController = async (req, res, next) => {
             }
                 break;
             case 'on_confirm':
-                // Then call confirm API.
-                // Handle on_confirm.
-                // Show message with order id and all.
-                console.log(JSON.stringify(data));
+                const transactionId=data.context.transaction_id;
+                const savedData = await db.getDB().collection('ongoing').findOne({
+                    transaction_id: transactionId,
+                    isResolved: false
+                });
+                const chat_id=savedData.chat_id;
+                if(data.error){
+                    replySender({
+                        chat_id: chat_id,
+                        text:"*Order Confirmation Failed.*\n"+data.error.message
+                    });
+                    return;
+                }
+
+                if(savedData!=null){
+                    // TODO: check whether next step is wait for confirm callback or not.
+                    
+                    redis.get(chat_id, async (err, reply) => {
+                        if (err) {
+                            replySender({
+                                chat_id: chat_id,
+                                text: "Something went Wrong"
+                            });
+                            console.log(err)
+                        }
+                        else {
+                            const cachedData = JSON.parse(reply)
+                            if(!cachedData){
+                                return;
+                            }
+
+                            const orderId=data.message.order.id;
+                            const orderState=data.message.order.state;
+                            const orderInfo=data.message.order;
+
+                            let orderText="*Order Confirmation*\n";
+                            orderText+="\nOrder Id: *"+orderId+"*\n";
+                            orderText+="\n*Costings*\n";
+
+                            let currItemIdx=1;
+                            orderInfo.quote.breakup.forEach((breakupItem) => {
+                                orderText+="\n*"+currItemIdx+"*";
+                                orderText+="\n*"+breakupItem.title+"*";
+                                orderText+="\nCost: *Rs. "+breakupItem.price.value+"*\n";
+                                currItemIdx++;
+                            });
+
+                            orderText+="\nTotal Amount: *Rs. "+orderInfo.quote.price.value+"*\n";
+                            orderText+="\nThanks for shopping with us.\n"
+                            
+                            replySender({
+                                chat_id:chat_id,
+                                text:orderText
+                            });
+
+                            savedData['order']=orderInfo;
+                            savedData['isResolved']=true;
+                            
+                            await db.getDB().collection('ongoing').deleteOne({
+                                _id: savedData._id
+                            })
+
+                            savedData['_id']=undefined;
+                            await db.getDB().collection('completed').insertOne({
+                                ...savedData    
+                            })
+                        }
+                    })
+                }
             break
             case 'on_update':
                 break
