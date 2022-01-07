@@ -525,10 +525,10 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
-                // fulfillmentInfo['end']['location']['gps'] = `${data.message.location.latitude}, ${data.message.location.longitude}`;
+                fulfillmentInfo['end']['location']['gps'] = `${data.message.location.latitude}, ${data.message.location.longitude}`;
 
-                // TODO: remove in production.
-                fulfillmentInfo['end']['location']['gps'] = "12.4535445,77.9283792";
+                // // TODO: remove in production.
+                // fulfillmentInfo['end']['location']['gps'] = "12.4535445,77.9283792";
 
                 cachedData['fulfillment'] = fulfillmentInfo;
                 // console.log(JSON.stringify(cachedData));
@@ -1075,11 +1075,11 @@ const searchForItemsAPI = async (itemName, location) => {
                     "end": {
                         "location": {
                             // TODO: make it correct in production.
-                            // // ORG Code.
-                            // "gps": location
+                            // ORG Code.
+                            "gps": location
 
-                            // Temp Code 1
-                            "gps": "12.4535445,77.9283792"
+                            // // Temp Code 1
+                            // "gps": "12.4535445,77.9283792"
                         }
                     }
                 }
