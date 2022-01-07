@@ -97,7 +97,8 @@ const handleRetail = async (cachedData, data) => {
                     updateCachedData['onSearchTrigger'] = retailSearchResp;
                     updateCachedData['isResolved'] = false;
 
-                    await db.getDB().collection('ongoing').insertOne(updateCachedData);
+                    const tempData=await db.getDB().collection('ongoing').insertOne(updateCachedData);
+                    console.log(tempData)
 
                     replySender({
                         chat_id: data.message.chat.id,
@@ -597,6 +598,7 @@ const handleRetail = async (cachedData, data) => {
 }
 
 const nextRetailItems = async (data, savedDataId) => {
+    // TODO: just use the redis queues.
     try {
         const savedData = await db.getDB().collection('ongoing').findOne({
             _id: ObjectId(savedDataId)
@@ -662,6 +664,8 @@ const nextRetailItems = async (data, savedDataId) => {
 }
 
 const sendItemMessage = async (itemsToDisplay, chat_id) => {
+    // TODO: Take items from the redis.
+    // Do not use items to display.
     const promises = [];
     itemsToDisplay.forEach(async (itemData) => {
         const displayText = getRetailItemText({
@@ -717,7 +721,7 @@ const sendItemMessage = async (itemsToDisplay, chat_id) => {
     const res = await Promise.all(promises);
 }
 
-const displayItemCount = 1;
+const displayItemCount = 3;
 
 const addToCartCallback = async (chat_id, itemUniqueId) => {
     try {
