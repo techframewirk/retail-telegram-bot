@@ -1,0 +1,148 @@
+{
+    "context": {
+        "domain": "nic2021:52110",
+        "country": "IND",
+        "city": "std:8080",
+        "action": "on_init",
+        "core_version": "0.9.3",
+        "bap_id": "qa.api.box.beckn.org",
+        "bap_uri": "https://cc97-27-62-144-87.ngrok.io/protocol/",
+        "transaction_id": "fdb24d25-8955-4302-a0fe-035277347828",
+        "message_id": "f68264e0-4000-47ba-9a41-f709d0017524",
+        "timestamp": "2022-01-07T05:04:08Z",
+        "ttl": "P1M",
+        "bpp_id": "bpp1.beckn.org",
+        "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+    },
+    "message": {
+        "order": {
+            "provider": {
+                "id": "453678",
+                "descriptor": {
+                    "name": "Grocery Retail",
+                    "short_desc": "Grocery Retail Product.",
+                    "images": [
+                        "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                    ]
+                },
+                "locations": [
+                    {
+                        "id": "el",
+                        "gps": "12.891704, 77.576873",
+                        "address": {
+                            "door": "",
+                            "name": "Address Name",
+                            "building": "West side",
+                            "street": "lsts 354537",
+                            "locality": "",
+                            "state": "Bangalore",
+                            "country": "IND",
+                            "area_code": "160002"
+                        },
+                        "station_code": "160002",
+                        "city": {
+                            "name": "Bangalore",
+                            "code": "Bangalore"
+                        },
+                        "country": {
+                            "name": "IND",
+                            "code": "IN"
+                        }
+                    }
+                ]
+            },
+            "provider_location": {
+                "id": "el"
+            },
+            "items": [
+                {
+                    "id": "G-0002",
+                    "price": {
+                        "currency": "INR",
+                        "value": 213
+                    },
+                    "quantity": {
+                        "count": 2
+                    }
+                }
+            ],
+            "billing": {
+                "name": "Ayush Agrawal",
+                "phone": "918085873059",
+                "address": {
+                    "door": "6",
+                    "building": "Dj",
+                    "street": "Hey",
+                    "city": "Vgh",
+                    "state": "Very",
+                    "country": "Very",
+                    "area_code": "495001"
+                },
+                "email": "Agrawal.ayush2500@gmail.com"
+            },
+            "fulfillment": {
+                "type": "store-pickup",
+                "tracking": false,
+                "start": {
+                    "location": {
+                        "id": "el",
+                        "descriptor": {
+                            "name": "Grocery Retail",
+                            "short_desc": "Grocery Retail Product.",
+                            "images": [
+                                "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                            ]
+                        },
+                        "gps": "12.891704, 77.576873"
+                    },
+                    "contact": {
+                        "phone": "supportbpp1@nomail.com",
+                        "email": "+919999999999"
+                    }
+                },
+                "end": {
+                    "location": {
+                        "gps": "22.080028, 82.168854",
+                        "address": {
+                            "door": "6",
+                            "building": "Dj",
+                            "street": "Hey",
+                            "city": "Vgh",
+                            "state": "Very",
+                            "country": "Very",
+                            "area_code": "495001"
+                        }
+                    },
+                    "contact": {
+                        "phone": "918085873059",
+                        "email": "Agrawal.ayush2500@gmail.com"
+                    }
+                }
+            },
+            "quote": {
+                "price": {
+                    "currency": "INR",
+                    "value": 426
+                },
+                "breakup": [
+                    {
+                        "title": "G Fresh Royal Gala Apple",
+                        "price": {
+                            "currency": "INR",
+                            "value": 426
+                        }
+                    }
+                ]
+            },
+            "payment": {
+                "params": {
+                    "amount": 426,
+                    "currency": "INR"
+                },
+                "type": "ON-FULFILLMENT",
+                "status": "NOT-PAID"
+            }
+        }
+    },
+    "_id": "61d7c9cc9c12a02b543501b1"
+}

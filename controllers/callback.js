@@ -15,7 +15,7 @@ const callBackController = async (req, res, next) => {
         console.log("Getting Callback....!");
         await db.getDB().collection('callbacks').insertOne(data)
         switch (data.context.action) {
-            case 'on_search':
+            case 'on_search': {
                 // For Fetching saved data.
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     message_id: data.context.message_id,
@@ -143,27 +143,30 @@ const callBackController = async (req, res, next) => {
                 } else {
                     // When Data is not found in mongo.
                 }
+            }
                 break
-            case 'on_confirm':
-                break;
             case 'on_select': {
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     transaction_id: data.context.transaction_id,
                     isResolved: false
                 });
+
+                
+                console.log(JSON.stringify(data))
+
                 if (savedData != null) {
                     // TODO: check whether next step is wait for quote callback or not.
-                    
+
                     const chat_id = savedData.chat_id;
-                    redis.get(chat_id, async(err, reply)=>{
-                        if(err){
+                    redis.get(chat_id, async (err, reply) => {
+                        if (err) {
                             replySender({
                                 chat_id: chat_id,
                                 text: "Something went Wrong"
                             });
-                            console.log(err)                
+                            console.log(err)
                         }
-                        else{
+                        else {
                             const cachedData = JSON.parse(reply)
                             const qouteData = data.message.order.quote;
                             let qouteText = "Your Order.\n";
@@ -171,9 +174,9 @@ const callBackController = async (req, res, next) => {
                                 qouteText += "\n*" + itemData.title + "*\n";
                                 qouteText += "Cost : *Rs. " + itemData.price.value + "*\n";
                             });
-                            qouteText+="\nTotal : *Rs. "+qouteData.price.value+"*\n";
-                            qouteText+="\nPlease Enter billing details to proceed further.\n";
-                            qouteText+=retail.msgs.billing_name;
+                            qouteText += "\nTotal : *Rs. " + qouteData.price.value + "*\n";
+                            qouteText += "\nPlease Enter billing details to proceed further.\n";
+                            qouteText += retail.msgs.billing_name;
 
                             replySender({
                                 chat_id: chat_id,
@@ -185,18 +188,50 @@ const callBackController = async (req, res, next) => {
                                 _id: savedData._id
                             }, {
                                 $set: {
-                                    qoute:qouteData
+                                    qoute: qouteData
                                 }
                             });
 
                             // Change the next step to billing_name.    
                             cachedData['nextStep'] = retail.steps.billing_name;
-                            redis.set(chat_id, JSON.stringify(cachedData));        
+                            redis.set(chat_id, JSON.stringify(cachedData));
                         }
-                    })    
+                    })
                 }
                 else {
                     // When Data is not found in mongo.
+                }
+            }
+                break;
+            case 'on_init': {
+                const savedData = await db.getDB().collection('ongoing').findOne({
+                    transaction_id: data.context.transaction_id,
+                    isResolved: false
+                });
+
+                console.log(JSON.stringify(data))
+
+                if(savedData!=null){
+                    // TODO: check whether next step is wait for init callback or not.
+                    
+                    const chat_id = savedData.chat_id;
+                    redis.get(chat_id, async (err, reply) => {
+                        if (err) {
+                            replySender({
+                                chat_id: chat_id,
+                                text: "Something went Wrong"
+                            });
+                            console.log(err)
+                        }
+                        else {
+                            const cachedData = JSON.parse(reply)
+                            if(!cachedData){
+                                return;
+                            }
+
+
+                        }
+                    })
                 }
             }
                 break;

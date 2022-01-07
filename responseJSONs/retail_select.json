@@ -1,0 +1,89 @@
+{
+    "context": {
+        "domain": "nic2021:52110",
+        "country": "IND",
+        "city": "std:8080",
+        "action": "on_select",
+        "core_version": "0.9.3",
+        "bap_id": "qa.api.box.beckn.org",
+        "bap_uri": "https://cc97-27-62-144-87.ngrok.io/protocol/",
+        "transaction_id": "1922b016-b445-458d-878b-35ad85637ff8",
+        "message_id": "78afe9cc-eff8-4bd4-9085-30ac5e26b52a",
+        "timestamp": "2022-01-07T05:12:40Z",
+        "ttl": "P1M",
+        "bpp_id": "bpp1.beckn.org",
+        "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+    },
+    "message": {
+        "order": {
+            "provider": {
+                "id": "453678",
+                "descriptor": {
+                    "name": "Grocery Retail",
+                    "short_desc": "Grocery Retail Product.",
+                    "images": [
+                        "https://bpp1.beckn.org/pub/media/beckn/provider/logo/default/shoes_men.jpg"
+                    ]
+                },
+                "locations": [
+                    {
+                        "id": "el",
+                        "gps": "12.891704, 77.576873",
+                        "address": {
+                            "door": "",
+                            "name": "Address Name",
+                            "building": "West side",
+                            "street": "lsts 354537",
+                            "locality": "",
+                            "state": "Bangalore",
+                            "country": "IND",
+                            "area_code": "160002"
+                        },
+                        "station_code": "160002",
+                        "city": {
+                            "name": "Bangalore",
+                            "code": "Bangalore"
+                        },
+                        "country": {
+                            "name": "IND",
+                            "code": "IN"
+                        }
+                    }
+                ]
+            },
+            "items": [
+                {
+                    "id": "G-0002",
+                    "price": {
+                        "currency": "INR",
+                        "value": 213
+                    },
+                    "quantity": {
+                        "selected": {
+                            "count": 6
+                        }
+                    }
+                }
+            ],
+            "quote": {
+                "price": {
+                    "currency": "INR",
+                    "value": 1278
+                },
+                "breakup": [
+                    {
+                        "title": "G Fresh Royal Gala Apple",
+                        "price": {
+                            "currency": "INR",
+                            "value": 1278
+                        }
+                    }
+                ]
+            },
+            "provider_location": {
+                "id": "el"
+            }
+        }
+    },
+    "_id": "61d7cbcb4eaf0e9ef7336a02"
+}

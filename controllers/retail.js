@@ -604,6 +604,8 @@ const handleRetail = async (cachedData, data) => {
                 providerLocations: providerLocations
             });
 
+            console.log(initOrderResp)
+
             // cachedData['nextStep']=retailSteps.waitForInitCallback;
             // redis.set(data.message.chat.id, JSON.stringify(cachedData))
             replySender({
@@ -1143,7 +1145,16 @@ const initOrderAPI=async({
         }
     };
 
-    
+    try {
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/init`,
+            reqBody
+        );
+        return response.data;
+    } catch (error) {
+        console.log(error)
+        return null;
+    }    
 }
 
 const retailDomain = "nic2004:52110";
