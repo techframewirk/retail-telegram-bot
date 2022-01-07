@@ -1,5 +1,5 @@
 const db = require('../utils/mongo')
-const {ObjectID} =require('mongodb')
+const { ObjectID } = require('mongodb')
 const axios = require('axios').default
 const redis = require('../utils/redis')
 const ioredis = require('../utils/ioredis')
@@ -23,7 +23,7 @@ const callBackController = async (req, res, next) => {
                     message_id: data.context.message_id,
                     isResolved: false
                 })
-                if ((savedData)&&(data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
+                if ((savedData) && (data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
                     // When Data is found in mongo.
                     const bpp_providers = data.message.catalog['bpp/providers'];
                     let itemDetails = [];
@@ -33,7 +33,7 @@ const callBackController = async (req, res, next) => {
                         toDisplayItems = true;
                     }
 
-                    const chat_id=savedData.chat_id;
+                    const chat_id = savedData.chat_id;
                     bpp_providers.forEach((providerData) => {
                         const locationData = providerData['locations'];
                         const shopDetails = providerData['descriptor'];
@@ -46,11 +46,13 @@ const callBackController = async (req, res, next) => {
                         });
 
                         providerData.items.forEach((itemData) => {
-                            const itemUniqueId = retail.createItemId({
-                                bpp_id: bppId,
-                                providerId: providerId,
-                                itemId: itemData.id
-                            });
+                            // const itemUniqueId = retail.createItemId({
+                            //     bpp_id: bppId,
+                            //     providerId: providerId,
+                            //     itemId: itemData.id
+                            // });
+
+                            const itemUniqueId = ObjectID();
                             const itemDetail = {
                                 ...itemData,
                                 retail_location: locationData,
@@ -60,14 +62,14 @@ const callBackController = async (req, res, next) => {
                                 bpp_id: bppId,
                                 bpp_uri: bppURI,
                                 item_unique_id: itemUniqueId,
-                                _id: ObjectID(),
+                                _id: itemUniqueId,
                             };
 
                             itemDetails.push(itemDetail);
                         });
                     });
 
-                    itemDetails.forEach(async (itemData)=>{
+                    itemDetails.forEach(async (itemData) => {
                         await db.getDB().collection('ongoing').updateOne({
                             _id: savedData._id
                         }, {
@@ -77,15 +79,15 @@ const callBackController = async (req, res, next) => {
                         })
                     });
 
-                    itemDetails.forEach(async(itemData)=>{
-                        await ioredis.rpush("chat_id"+chat_id, JSON.stringify(itemData));
+                    itemDetails.forEach(async (itemData) => {
+                        await ioredis.rpush("chat_id" + chat_id, JSON.stringify(itemData));
                     });
-                    
-                    if(toDisplayItems){    
+
+                    if (toDisplayItems) {
                         retail.sendItemMessage(chat_id);
                     }
 
-                    console.log(await ioredis.llen("chat_id"+chat_id))
+                    console.log(await ioredis.llen("chat_id" + chat_id))
                 } else {
                     // When Data is not found in mongo.
                 }
@@ -97,7 +99,7 @@ const callBackController = async (req, res, next) => {
                     isResolved: false
                 });
 
-                
+
                 // console.log(JSON.stringify(data))
                 if (savedData != null) {
                     const chat_id = savedData.chat_id;
@@ -112,7 +114,7 @@ const callBackController = async (req, res, next) => {
                         else {
                             const cachedData = JSON.parse(reply)
                             // checking whether next step is wait for quote callback or not.
-                            if(cachedData.nextStep!=retail.steps.waitForQouteCallback){
+                            if (cachedData.nextStep != retail.steps.waitForQouteCallback) {
                                 // Returning because current step is not wait for qoute callback.
                                 return;
                             }
@@ -158,9 +160,9 @@ const callBackController = async (req, res, next) => {
                     isResolved: false
                 });
 
-                if(savedData!=null){
+                if (savedData != null) {
                     // TODO: check whether next step is wait for init callback or not.
-                    
+
                     const chat_id = savedData.chat_id;
                     redis.get(chat_id, async (err, reply) => {
                         if (err) {
@@ -172,11 +174,11 @@ const callBackController = async (req, res, next) => {
                         }
                         else {
                             const cachedData = JSON.parse(reply)
-                            if(!cachedData){
+                            if (!cachedData) {
                                 return;
                             }
 
-                            const paymentData=data.message.order.payment;
+                            const paymentData = data.message.order.payment;
                             await db.getDB().collection('ongoing').updateOne({
                                 _id: savedData._id
                             }, {
@@ -184,7 +186,7 @@ const callBackController = async (req, res, next) => {
                                     payment: paymentData
                                 }
                             });
-                            const paymentText="Please Confirm your order.\n\nAmount: *Rs. "+paymentData.params.amount+"*\n\nPayment Method: *Cash on Delivery.*";
+                            const paymentText = "Please Confirm your order.\n\nAmount: *Rs. " + paymentData.params.amount + "*\n\nPayment Method: *Cash on Delivery.*";
                             const reply_markup = {
                                 inline_keyboard: [
                                     [
@@ -210,12 +212,12 @@ const callBackController = async (req, res, next) => {
                                 "one_time_keyboard": true
                             };
                             replySender({
-                                chat_id:chat_id,
+                                chat_id: chat_id,
                                 text: paymentText,
                                 reply_markup: reply_markup
                             });
 
-                            cachedData['nextStep']=retail.steps.stateOrderConfirmation;
+                            cachedData['nextStep'] = retail.steps.stateOrderConfirmation;
                             redis.set(chat_id, JSON.stringify(cachedData));
                         }
                     })
@@ -223,23 +225,23 @@ const callBackController = async (req, res, next) => {
             }
                 break;
             case 'on_confirm':
-                const transactionId=data.context.transaction_id;
+                const transactionId = data.context.transaction_id;
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     transaction_id: transactionId,
                     isResolved: false
                 });
-                const chat_id=savedData.chat_id;
-                if(data.error){
+                const chat_id = savedData.chat_id;
+                if (data.error) {
                     replySender({
                         chat_id: chat_id,
-                        text:"*Order Confirmation Failed.*\n"+data.error.message
+                        text: "*Order Confirmation Failed.*\n" + data.error.message
                     });
                     return;
                 }
 
-                if(savedData!=null){
+                if (savedData != null) {
                     // TODO: check whether next step is wait for confirm callback or not.
-                    
+
                     redis.get(chat_id, async (err, reply) => {
                         if (err) {
                             replySender({
@@ -250,49 +252,49 @@ const callBackController = async (req, res, next) => {
                         }
                         else {
                             const cachedData = JSON.parse(reply)
-                            if(!cachedData){
+                            if (!cachedData) {
                                 return;
                             }
 
-                            const orderId=data.message.order.id;
-                            const orderState=data.message.order.state;
-                            const orderInfo=data.message.order;
+                            const orderId = data.message.order.id;
+                            const orderState = data.message.order.state;
+                            const orderInfo = data.message.order;
 
-                            let orderText="*Order Confirmation*\n";
-                            orderText+="\nOrder Id: *"+orderId+"*\n";
-                            orderText+="\n*Costings*\n";
+                            let orderText = "*Order Confirmation*\n";
+                            orderText += "\nOrder Id: *" + orderId + "*\n";
+                            orderText += "\n*Costings*\n";
 
-                            let currItemIdx=1;
+                            let currItemIdx = 1;
                             orderInfo.quote.breakup.forEach((breakupItem) => {
-                                orderText+="\n*"+currItemIdx+"*";
-                                orderText+="\n*"+breakupItem.title+"*";
-                                orderText+="\nCost: *Rs. "+breakupItem.price.value+"*\n";
+                                orderText += "\n*" + currItemIdx + "*";
+                                orderText += "\n*" + breakupItem.title + "*";
+                                orderText += "\nCost: *Rs. " + breakupItem.price.value + "*\n";
                                 currItemIdx++;
                             });
 
-                            orderText+="\nTotal Amount: *Rs. "+orderInfo.quote.price.value+"*\n";
-                            orderText+="\nThanks for shopping with us.\n"
-                            
+                            orderText += "\nTotal Amount: *Rs. " + orderInfo.quote.price.value + "*\n";
+                            orderText += "\nThanks for shopping with us.\n"
+
                             replySender({
-                                chat_id:chat_id,
-                                text:orderText
+                                chat_id: chat_id,
+                                text: orderText
                             });
 
-                            savedData['order']=orderInfo;
-                            savedData['isResolved']=true;
-                            
+                            savedData['order'] = orderInfo;
+                            savedData['isResolved'] = true;
+
                             await db.getDB().collection('ongoing').deleteOne({
                                 _id: savedData._id
                             })
 
-                            savedData['_id']=undefined;
+                            savedData['_id'] = undefined;
                             await db.getDB().collection('completed').insertOne({
-                                ...savedData    
+                                ...savedData
                             })
                         }
                     })
                 }
-            break
+                break
             case 'on_update':
                 break
             case 'on_cancel':

@@ -547,7 +547,7 @@ const handleRetail = async (cachedData, data) => {
                 }
 
                 const messageId = cachedData.message_id;
-                const selectedItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
+                const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
                 const itemsForAPICall = [];
                 let provderId;
                 let providerLocations;
@@ -745,7 +745,7 @@ const checkoutCallback = async (chat_id, messageId) => {
                     return;
                 }
 
-                const selectItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
+                const selectItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
 
                 // Add button for proceed and cancel.
                 let cartText = "Your Cart.\n";
@@ -858,7 +858,7 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
             }
 
             const transactionId = savedData.transaction_id;
-            const selectedItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
+            const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
             const itemsForAPICall = [];
             let provderId;
             let providerLocations;
@@ -969,7 +969,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
 
             const messageId = savedData.message_id;
             const paymentInfo = savedData.payment;
-            const selectedItemDetails = getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
+            const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
             const itemsForAPICall = [];
             let provderId;
             let providerLocations;
@@ -1033,9 +1033,9 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
     });
 }
 
-const getSelectItemDetails = (allItemDetails, selectedItems) => {
+const getSelectItemDetails = (items, selectedItems) => {
     const selectItemDetails = [];
-    allItemDetails.forEach((itemData) => {
+    items.forEach((itemData) => {
         let itemCount = 0;
         selectedItems.forEach(({ item_unique_id, count }) => {
             if (itemData.item_unique_id == item_unique_id) {
