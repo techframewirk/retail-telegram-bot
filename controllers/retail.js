@@ -605,7 +605,7 @@ const handleRetail = async (cachedData, data) => {
             });
 
             console.log(initOrderResp)
-
+            // TODO: uncomment this once done testing.
             // cachedData['nextStep']=retailSteps.waitForInitCallback;
             // redis.set(data.message.chat.id, JSON.stringify(cachedData))
             replySender({
