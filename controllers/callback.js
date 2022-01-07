@@ -274,12 +274,6 @@ const callBackController = async (req, res, next) => {
             }
                 break;
             case 'on_confirm':
-                // Then call confirm API.
-                // Handle on_confirm.
-                // Show message with order id and all.
-                
-                console.log(JSON.stringify(data))
-
                 const transactionId=data.context.transaction_id;
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     transaction_id: transactionId,
@@ -314,7 +308,6 @@ const callBackController = async (req, res, next) => {
                             const orderId=data.message.order.id;
                             const orderState=data.message.order.state;
                             const orderInfo=data.message.order;
-                            orderInfo.items=retail.getSelectItemDetails(savedData.allItemDetails, cachedData.selectedItems);
 
                             let orderText="*Order Confirmation*\n";
                             orderText+="\nOrder Id: *"+orderId+"*\n";
@@ -338,8 +331,15 @@ const callBackController = async (req, res, next) => {
 
                             savedData['order']=orderInfo;
                             savedData['isResolved']=true;
-                            // TODO: delete the other one from on going.
-                            // TODO: saved the new savedData in completed collection
+                            
+                            await db.getDB().collection('ongoing').deleteOne({
+                                _id: savedData._id
+                            })
+
+                            savedData['_id']=undefined;
+                            await db.getDB().collection('completed').insertOne({
+                                ...savedData    
+                            })
                         }
                     })
                 }

@@ -945,7 +945,27 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
 
 const cancelConfirmCallback = async (chat_id, transaction_id) => {
     // TODO: check the state for state Order Confirmation
-    console.log(transaction_id)
+    
+    redis.get(chat_id, async (err, reply) => {
+        if (err) {
+            replySender({
+                chat_id: chat_id,
+                text: "Something went Wrong"
+            });
+            console.log(err)
+        } else {
+            // TODO: check the next step.
+            // if it is proceed checkout, then only allow.
+            const cachedData = JSON.parse(reply)
+        
+            cachedData['nextStep'] = retailSteps.itemSelect;
+            redis.set(chat_id, JSON.stringify(cachedData));
+            replySender({
+                chat_id:chat_id,
+                text:"Your items are still saved in the cart.\nYou can add more items and place an order."
+            });
+        }
+    });
 }
 const confirmOrderCallback = async (chat_id, transactionId) => {
     // TODO: check the state for state Order Confirmation
