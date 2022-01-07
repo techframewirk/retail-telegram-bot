@@ -1281,7 +1281,7 @@ const retailMsgs = {
 
     shipping_location:"Please share your shipping location.",
 
-    waitForInitCallback:"We have initiated the your order.\nPease wait for a moment."
+    waitForInitCallback:"We have initiated the your order.\nPlease wait for a moment."
 }
 
 module.exports = {

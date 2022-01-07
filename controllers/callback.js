@@ -152,7 +152,7 @@ const callBackController = async (req, res, next) => {
                 });
 
                 
-                console.log(JSON.stringify(data))
+                // console.log(JSON.stringify(data))
 
                 if (savedData != null) {
                     // TODO: check whether next step is wait for quote callback or not.
@@ -226,10 +226,17 @@ const callBackController = async (req, res, next) => {
                         else {
                             const cachedData = JSON.parse(reply)
                             if(!cachedData){
-                                return;
+                                
                             }
 
-
+                            // TODO: change the next step to confirm order
+                            // Save the payment info.
+                            // Send a message to user.
+                            // Ask to confirm the order.
+                            // Creating confirm callback.
+                            // Then call confirm API.
+                            // Handle on_confirm.
+                            // Show message with order id and all.
                         }
                     })
                 }
