@@ -29,7 +29,7 @@ const callBackController = async (req, res, next) => {
                     let itemDetails = [];
 
                     let toDisplayItems = false;
-                    if (!savedData.itemDetails) {
+                    if (!savedData.items) {
                         toDisplayItems = true;
                     }
 
@@ -77,55 +77,15 @@ const callBackController = async (req, res, next) => {
                         })
                     });
 
-                    // TODO: push the items into redis.
-                    try {
-                        const itemsStrings=[];
-                        itemDetails.forEach((itemData)=>{
-                            itemsStrings.push(JSON.stringify(itemData));
-                        });
-                        
-                        await ioredis.rpush("chat_id"+chat_id, ...['tomato']);
-                    } catch (error) {
-                        console.log("From pushing....")
-                        console.log(error)
+                    itemDetails.forEach(async(itemData)=>{
+                        await ioredis.rpush("chat_id"+chat_id, JSON.stringify(itemData));
+                    });
+                    
+                    if(toDisplayItems){    
+                        retail.sendItemMessage(chat_id);
                     }
 
-                    try {
-                        const someTest=await ioredis.lpop("chat_id"+chat_id);
-                        console.log(someTest)
-                    } catch (error) {
-                        console.log("From Popping Up...")
-                        console.log(error)
-                    }
-
-                    // TODO: use redis queue.
-                    // if (itemsToDisplay.length > 0) {
-                    //     // Sending Items.
-                    //     await retail.sendItemMessage(itemsToDisplay, savedData.chat_id);
-
-                    //     // TODO: Take a look at its position.
-                    //     // Next button.
-                    //     replySender({
-                    //         chat_id: savedData.chat_id,
-                    //         text: "To view More Items",
-                    //         reply_markup: JSON.stringify({
-                    //             inline_keyboard: [
-                    //                 [
-                    //                     {
-                    //                         text: "Next",
-                    //                         callback_data: callbackUtils.encrypt({
-                    //                             type: 'retail',
-                    //                             commandType: retail.callbackTypes.next,
-                    //                             id: savedData._id
-                    //                         })
-                    //                     }
-                    //                 ]
-                    //             ],
-                    //             "resize_keyboard": true,
-                    //             "one_time_keyboard": true
-                    //         })
-                    //     });
-                    // }
+                    console.log(await ioredis.llen("chat_id"+chat_id))
                 } else {
                     // When Data is not found in mongo.
                 }

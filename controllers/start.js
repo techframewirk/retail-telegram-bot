@@ -1,6 +1,7 @@
 const axios = require('axios').default
 const commands = require('../commands.json')
 const redis = require('../utils/redis')
+const ioredis = require('../utils/ioredis')
 const db = require('../utils/mongo')
 const replySender = require('./replySender');
 const retail = require('./retail');
@@ -45,6 +46,11 @@ const webhookController = async (req, res, next) => {
         if (data.message != undefined) {
             if ((typeof (data.message.entities) != 'undefined') && (data.message.entities[0].type == 'bot_command')) {
                 redis.del(data.message.from.id)
+                try {
+                    console.log(await ioredis.del("chat_id"+data.message.from.id))
+                } catch (error) {
+                    console.log(error)    
+                }
                 switch (data.message.text) {
                     case '/retail':
                         redis.set(data.message.from.id, JSON.stringify({
@@ -97,7 +103,7 @@ const webhookController = async (req, res, next) => {
                     const commandType = decryptedData.commandType
                     switch (commandType) {
                         case retail.callbackTypes.next:
-                            retail.nextRetailItems(data, decryptedData.id)
+                            retail.nextRetailItems(data.callback_query.from.id)
                             break;
 
                         case retail.callbackTypes.addToCart:
