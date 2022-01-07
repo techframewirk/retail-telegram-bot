@@ -209,8 +209,6 @@ const callBackController = async (req, res, next) => {
                     isResolved: false
                 });
 
-                console.log(JSON.stringify(data))
-
                 if(savedData!=null){
                     // TODO: check whether next step is wait for init callback or not.
                     
@@ -226,22 +224,61 @@ const callBackController = async (req, res, next) => {
                         else {
                             const cachedData = JSON.parse(reply)
                             if(!cachedData){
-                                
+                                return;
                             }
 
-                            // TODO: change the next step to confirm order
-                            // Save the payment info.
-                            // Send a message to user.
-                            // Ask to confirm the order.
-                            // Creating confirm callback.
-                            // Then call confirm API.
-                            // Handle on_confirm.
-                            // Show message with order id and all.
+                            const paymentData=data.message.order.payment;
+                            await db.getDB().collection('ongoing').updateOne({
+                                _id: savedData._id
+                            }, {
+                                $set: {
+                                    payment: paymentData
+                                }
+                            });
+                            const paymentText="Please Confirm your order.\n\nAmount: *Rs. "+paymentData.params.amount+"*\n\nPayment Method: *Cash on Delivery.*";
+                            const reply_markup = {
+                                inline_keyboard: [
+                                    [
+                                        {
+                                            text: "Cancel",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.cancelConfirm,
+                                                id: savedData.transaction_id
+                                            })
+                                        },
+                                        {
+                                            text: "Confirm",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.confirmOrder,
+                                                id: savedData.transaction_id
+                                            })
+                                        }
+                                    ]
+                                ],
+                                "resize_keyboard": true,
+                                "one_time_keyboard": true
+                            };
+                            replySender({
+                                chat_id:chat_id,
+                                text: paymentText,
+                                reply_markup: reply_markup
+                            });
+
+                            cachedData['nextStep']=retail.steps.stateOrderConfirmation;
+                            redis.set(chat_id, JSON.stringify(cachedData));
                         }
                     })
                 }
             }
                 break;
+            case 'on_confirm':
+                // Then call confirm API.
+                // Handle on_confirm.
+                // Show message with order id and all.
+                console.log(JSON.stringify(data));
+            break
             case 'on_update':
                 break
             case 'on_cancel':
