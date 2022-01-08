@@ -131,6 +131,14 @@ const webhookController = async (req, res, next) => {
                         case retail.callbackTypes.cancelConfirm:
                             retail.cancelConfirmCallback(chat_id, decryptedData.id);
                             break;
+                        
+                        case retail.callbackTypes.trackOrder:
+                            retail.trackOrderCallback(chat_id, decryptedData.id);
+                            break;
+                    
+                        case retail.callbackTypes.orderStatus:
+                            retail.orderStatusCallback(chat_id, decryptedData.id);
+                            break;
                     }
 
                     break;

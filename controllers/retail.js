@@ -533,7 +533,7 @@ const handleRetail = async (cachedData, data) => {
                 fulfillmentInfo['end']["location"]['address']['area_code'] = data.message.text;
 
                 cachedData['fulfillment'] = fulfillmentInfo;
-                
+
                 const requiredInitInfo = await createInitAPIInfo(cachedData)
                 const initOrderResp = await initOrderAPI(requiredInitInfo);
 
@@ -1050,6 +1050,77 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
     });
 }
 
+const trackOrderCallback = async (chat_id, transactionId) => {
+    const savedData = await db.getDB().collection('completed').findOne({
+        transaction_id: transactionId,
+    });
+
+    const orderId = savedData.order.id;
+    const bppId = savedData.onConfirmCallback.context.bpp_id;
+    const bppUri = savedData.onConfirmCallback.context.bpp_uri;
+
+    const reqBody = {
+        "context": {
+            "domain": retailDomain,
+            "core_version": "0.9.3",
+            "city": "std:080",
+            "country": "IND",
+            "bpp_id":bppId,
+            "bpp_uri":bppUri,
+            "transaction_id":transactionId
+        },
+        "message": {
+            "order_id": orderId
+        }
+    }
+
+    try {
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/track`,
+            reqBody
+        );
+
+        console.log(response.data);
+    } catch (error) {
+        console.log(error);
+    }    
+}
+const orderStatusCallback = async (chat_id, transactionId) => {
+    const savedData = await db.getDB().collection('completed').findOne({
+        transaction_id: transactionId,
+    });
+
+    const orderId = savedData.order.id;
+    const bppId = savedData.onConfirmCallback.context.bpp_id;
+    const bppUri = savedData.onConfirmCallback.context.bpp_uri;
+
+    const reqBody = {
+        "context": {
+            "domain": retailDomain,
+            "core_version": "0.9.3",
+            "city": "std:080",
+            "country": "IND",
+            "bpp_id":bppId,
+            "bpp_uri":bppUri,
+            transaction_id:transactionId
+        },
+        "message": {
+            "order_id": orderId
+        }
+    }
+
+    try {
+        const response = await axios.post(
+            `${process.env.becknService}/trigger/status`,
+            reqBody
+        );
+
+        console.log(response.data);
+    } catch (error) {
+        console.log(error);
+    }    
+}
+
 const getSelectItemDetails = (items, selectedItems) => {
     const selectItemDetails = [];
     items.forEach((itemData) => {
@@ -1373,12 +1444,6 @@ const createProviderId = ({
     return bpp_id + " " + providerId;
 }
 
-const createItemId = ({
-    bpp_id, providerId, itemId
-}) => {
-    return bpp_id + " " + providerId + " " + itemId;
-}
-
 const getRetailItemText = ({
     name, mrp, soldBy, count
 }) => {
@@ -1446,7 +1511,9 @@ const retailCallBackTypes = {
     cancelCheckout: "CancelCheckout",
     proceedCheckout: "ProceedCheckout",
     cancelConfirm: "CancelConfirm",
-    confirmOrder: "ConfirmOrder"
+    confirmOrder: "ConfirmOrder",
+    trackOrder: "TrackOrder",
+    orderStatus: "OrderStatus"
 }
 
 // These are the text messages for each step.
@@ -1507,9 +1574,10 @@ module.exports = {
     proceedCheckoutCallback,
     cancelConfirmCallback,
     confirmOrderCallback,
+    trackOrderCallback,
+    orderStatusCallback,
 
     displayItemCount,
     sendItemMessage,
-    createProviderId,
-    createItemId
+    createProviderId
 };
