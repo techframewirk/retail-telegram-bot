@@ -44,7 +44,7 @@ const handleRetail = async (cachedData, data) => {
                             callback_data: callbackUtils.encrypt({
                                 type: 'retail',
                                 commandType: retailCallBackTypes.checkout,
-                                id: cachedData.message_id
+                                id: cachedData.transaction_id
                             })
                         }
                     ]
@@ -88,7 +88,8 @@ const handleRetail = async (cachedData, data) => {
                 updateCachedData['nextStep'] = retailSteps.itemSelect;
                 updateCachedData[retailSteps.itemName] = data.message.text;
 
-                const retailSearchResp = await searchForItemsAPI(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location]);
+                const transactionId = updateCachedData['transaction_id'];
+                const retailSearchResp = await searchForItemsAPI(updateCachedData[retailSteps.itemName], updateCachedData[retailSteps.location], transactionId);
                 if (retailSearchResp) {
                     updateCachedData['transaction_id'] = retailSearchResp.context.transaction_id;
                     updateCachedData['message_id'] = retailSearchResp.context.message_id;
@@ -525,9 +526,9 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
-                fulfillmentInfo['end']['location']['gps'] = `${data.message.location.latitude}, ${data.message.location.longitude}`;
+                fulfillmentInfo['end']['location']['gps'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
-                // // TODO: remove in production.
+                // // TODO: TEMP remove in production.
                 // fulfillmentInfo['end']['location']['gps'] = "12.4535445,77.9283792";
 
                 cachedData['fulfillment'] = fulfillmentInfo;
@@ -597,16 +598,31 @@ const handleRetail = async (cachedData, data) => {
     }
 }
 
-const nextRetailItems = async (chat_id) => {
-    // TODO: just use the redis queues.
+const nextItemsCallback = async (chat_id, transactionId) => {
     try {
         if (await ioredis.llen("chat_id" + chat_id) > 0) {
-            await sendItemMessage(chat_id)
+            await sendItemMessage(chat_id, transactionId)
         }
         else {
             replySender({
                 chat_id: chat_id,
-                text: "Currently No more matching items available."
+                text: "Currently No more matching items available.\nYou can search for another item.",
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "Search",
+                                callback_data: callbackUtils.encrypt({
+                                    type: 'retail',
+                                    commandType: retailCallBackTypes.anotherSearch,
+                                    id: transactionId
+                                })
+                            }
+                        ]
+                    ],
+                    "resize_keyboard": true,
+                    "one_time_keyboard": true
+                })
             });
         }
     } catch (error) {
@@ -614,8 +630,9 @@ const nextRetailItems = async (chat_id) => {
     }
 }
 
-const sendItemMessage = async (chat_id) => {
-    console.log(await ioredis.llen("chat_id" + chat_id));
+const sendItemMessage = async (chat_id, transactionId) => {
+    console.log(transactionId)
+    // console.log(await ioredis.llen("chat_id" + chat_id));
 
     let itemCount = 0;
     while ((itemCount < displayItemCount) && (await ioredis.llen("chat_id" + chat_id))) {
@@ -666,31 +683,81 @@ const sendItemMessage = async (chat_id) => {
         itemCount++;
     }
 
+    const reply_markup = {
+        inline_keyboard: [
+            [
+                {
+                    text: "Search",
+                    callback_data: callbackUtils.encrypt({
+                        type: 'retail',
+                        commandType: retailCallBackTypes.anotherSearch,
+                        id: transactionId
+                    })
+                }
+            ]
+        ],
+        "resize_keyboard": true,
+        "one_time_keyboard": true
+    };
     if (await ioredis.llen("chat_id" + chat_id) > 0) {
-        replySender({
-            chat_id: chat_id,
-            text: "To view More Items",
-            reply_markup: JSON.stringify({
-                inline_keyboard: [
-                    [
-                        {
-                            text: "Next",
-                            callback_data: callbackUtils.encrypt({
-                                type: 'retail',
-                                commandType: retailCallBackTypes.next,
-                                id: chat_id
-                            })
-                        }
-                    ]
-                ],
-                "resize_keyboard": true,
-                "one_time_keyboard": true
+        reply_markup.inline_keyboard[0].push({
+            text: "Next",
+            callback_data: callbackUtils.encrypt({
+                type: 'retail',
+                commandType: retailCallBackTypes.next,
+                id: transactionId
             })
         });
     }
+
+    // replySender({
+    //     chat_id: chat_id,
+    //     text: "To view More Items",
+    //     reply_markup: JSON.stringify(reply_markup)
+    // });
+
+    await sleep(1000)
+    replySender({
+        chat_id: chat_id,
+        text: "To view More Items",
+        reply_markup: JSON.stringify(reply_markup)
+    });
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 const displayItemCount = 2;
+
+const anotherSearchCallback = async (chat_id, transactionId) => {
+    try {
+        redis.get(chat_id, async (err, reply) => {
+            if (err) {
+                replySender({
+                    chat_id: chat_id,
+                    text: "Something went Wrong"
+                });
+                console.log(err)
+            } else {
+                // TODO: check whether it is in select item step or not.
+
+                await ioredis.del("chat_id" + chat_id);
+
+                const cachedData = JSON.parse(reply)
+                cachedData['nextStep'] = retailSteps.itemName;
+                redis.set(chat_id, JSON.stringify(cachedData));
+
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs.itemName
+                });
+            }
+        });
+    } catch (error) {
+        console.log(error)
+    }
+}
 
 const addToCartCallback = async (chat_id, itemUniqueId) => {
     try {
@@ -719,7 +786,7 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
     }
 }
 
-const checkoutCallback = async (chat_id, messageId) => {
+const checkoutCallback = async (chat_id, transactionId) => {
     try {
         redis.get(chat_id, async (err, reply) => {
             if (err) {
@@ -734,7 +801,7 @@ const checkoutCallback = async (chat_id, messageId) => {
                 const cachedData = JSON.parse(reply)
 
                 const savedData = await db.getDB().collection('ongoing').findOne({
-                    message_id: messageId
+                    transaction_id: transactionId
                 });
 
                 if (!cachedData.selectedItems) {
@@ -769,7 +836,7 @@ const checkoutCallback = async (chat_id, messageId) => {
                                 callback_data: callbackUtils.encrypt({
                                     type: 'retail',
                                     commandType: retailCallBackTypes.cancelCheckout,
-                                    id: savedData.message_id
+                                    id: savedData.transaction_id
                                 })
                             },
                             {
@@ -777,7 +844,7 @@ const checkoutCallback = async (chat_id, messageId) => {
                                 callback_data: callbackUtils.encrypt({
                                     type: 'retail',
                                     commandType: retailCallBackTypes.proceedCheckout,
-                                    id: savedData.message_id
+                                    id: savedData.transaction_id
                                 })
                             }
                         ]
@@ -803,8 +870,7 @@ const checkoutCallback = async (chat_id, messageId) => {
 }
 
 
-const cancelCheckoutCallback = async (chat_id, message_id) => {
-    console.log(chat_id, message_id)
+const cancelCheckoutCallback = async (chat_id, transactionId) => {
     try {
 
         redis.get(chat_id, async (err, reply) => {
@@ -831,7 +897,7 @@ const cancelCheckoutCallback = async (chat_id, message_id) => {
     }
 }
 
-const proceedCheckoutCallback = async (chat_id, messageId) => {
+const proceedCheckoutCallback = async (chat_id, transactionId) => {
 
     redis.get(chat_id, async (err, reply) => {
         if (err) {
@@ -846,7 +912,7 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
             const cachedData = JSON.parse(reply)
 
             const savedData = await db.getDB().collection('ongoing').findOne({
-                message_id: messageId
+                transaction_id: transactionId
             });
 
             if (!cachedData.selectedItems) {
@@ -857,7 +923,7 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
                 return;
             }
 
-            const transactionId = savedData.transaction_id;
+            const messageId = savedData.message_id;
             const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
             const itemsForAPICall = [];
             let provderId;
@@ -892,14 +958,14 @@ const proceedCheckoutCallback = async (chat_id, messageId) => {
                 cachedData['nextStep'] = retailSteps.waitForQouteCallback;
                 redis.set(chat_id, JSON.stringify(cachedData));
 
-                // TODO: Implement this in prod.
-                // await db.getDB().collection('ongoing').updateOne({
-                //     _id: savedData._id
-                // }, {
-                //     $set: {
-                //         message_id:addToCartResp.context.message_id
-                //     }
-                // });
+                // TODO: TEMP Implement this in prod.
+                await db.getDB().collection('ongoing').updateOne({
+                    _id: savedData._id
+                }, {
+                    $set: {
+                        message_id: addToCartResp.context.message_id
+                    }
+                });
 
                 replySender({
                     chat_id: chat_id,
@@ -1008,14 +1074,14 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
                 cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
                 redis.set(chat_id, JSON.stringify(cachedData));
 
-                // TODO: Implement this in prod.
-                // await db.getDB().collection('ongoing').updateOne({
-                //     _id: savedData._id
-                // }, {
-                //     $set: {
-                //         message_id:confirmOrderResp.context.message_id
-                //     }
-                // });
+                // TODO: TEMP Implement this in prod.
+                await db.getDB().collection('ongoing').updateOne({
+                    _id: savedData._id
+                }, {
+                    $set: {
+                        message_id: confirmOrderResp.context.message_id
+                    }
+                });
 
                 // TODO: send an msg with order id and all.
                 replySender({
@@ -1054,16 +1120,20 @@ const getSelectItemDetails = (items, selectedItems) => {
 }
 
 // All API Calls.
-const searchForItemsAPI = async (itemName, location) => {
+const searchForItemsAPI = async (itemName, location, transactionId) => {
+    console.log(transactionId);
     let reqBody = {
         "context": {
             "domain": retailDomain,
             "core_version": "0.9.3",
             "city": "std:080",
             "country": "IND",
+            "transaction_id": transactionId,
+
+            // // TODO: TEMP Remove in prod.
             // "bpp_id": "bpp1.beckn.org",
             // "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
-            
+
             // "bpp_id": "mindy.succinct.in",
             // "bpp_uri": "https://beckn-one.succinct.in/bg/"
         },
@@ -1077,12 +1147,15 @@ const searchForItemsAPI = async (itemName, location) => {
                 "fulfillment": {
                     "end": {
                         "location": {
-                            // TODO: make it correct in production.
+                            // TODO: TEMP make it correct in production.
                             // ORG Code.
                             "gps": location
 
                             // // Temp Code 1
                             // "gps": "12.4535445,77.9283792"
+
+                            // // Temp Code 2
+                            // "gps":"28.528173,77.202997"
                         }
                     }
                 }
@@ -1370,6 +1443,7 @@ const retailSteps = {
 
 const retailCallBackTypes = {
     next: "Next",
+    anotherSearch: "anotherSearch",
     addToCart: "AddToCart",
     checkout: "CheckOut",
     cancelCheckout: "CancelCheckout",
@@ -1428,7 +1502,8 @@ module.exports = {
     getSelectItemDetails,
 
     // Callbacks
-    nextRetailItems,
+    nextItemsCallback,
+    anotherSearchCallback,
     addToCartCallback,
     checkoutCallback,
     cancelCheckoutCallback,
