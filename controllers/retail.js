@@ -68,15 +68,15 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemName;
-                // TODO: TEMP Make it ORG in prod.
-                // ORG Code.
-                updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
+                // // TODO: TEMP Make it ORG in prod.
+                // // ORG Code.
+                // updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
-                // // Temp Code 1
-                // updateCachedData['location'] = "12.4535445,77.9283792";
+                // Temp Code 1
+                updateCachedData['location'] = "12.4535445,77.9283792";
 
                 // // Temp Code 2
-                // updateCachedData['location'] = "28.528173,77.202997";
+                // updateCachedData['location'] = "28.528328,77.202714";
 
 
                 redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
@@ -345,10 +345,16 @@ const handleRetail = async (cachedData, data) => {
                     }
                     cachedData['fulfillment'] = fulfillment;
 
-                    const requiredInitInfo = await createInitAPIInfo(cachedData)
-                    const initOrderResp = await initOrderAPI(requiredInitInfo);
+                    const reqItemProvidersInfo = await createInitAPIInfo(cachedData)
+                    try {
+                        Object.keys(reqItemProvidersInfo).forEach(async (providerUniqueId) => {
+                            const initOrderResp = await initOrderAPI(reqItemProvidersInfo[providerUniqueId]);
+                            console.log(initOrderResp)
+                        });
+                    } catch (error) {
+                        console.log(error)
+                    }
 
-                    console.log(initOrderResp)
                     cachedData['nextStep'] = retailSteps.waitForInitCallback;
                     redis.set(data.message.chat.id, JSON.stringify(cachedData))
                     replySender({
@@ -533,11 +539,16 @@ const handleRetail = async (cachedData, data) => {
                 fulfillmentInfo['end']["location"]['address']['area_code'] = data.message.text;
 
                 cachedData['fulfillment'] = fulfillmentInfo;
+                const reqItemProvidersInfo = await createInitAPIInfo(cachedData)
+                try {
+                    Object.keys(reqItemProvidersInfo).forEach(async (providerUniqueId) => {
+                        const initOrderResp = await initOrderAPI(reqItemProvidersInfo[providerUniqueId]);
+                        console.log(initOrderResp)
+                    });
+                } catch (error) {
+                    console.log(error)
+                }
 
-                const requiredInitInfo = await createInitAPIInfo(cachedData)
-                const initOrderResp = await initOrderAPI(requiredInitInfo);
-
-                console.log(initOrderResp)
                 cachedData['nextStep'] = retailSteps.waitForInitCallback;
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
@@ -809,7 +820,6 @@ const checkoutCallback = async (chat_id, transactionId) => {
                     reply_markup: reply_markup
                 });
 
-                // Set the next step.
                 cachedData['nextStep'] = retailSteps.proceedCheckout;
                 redis.set(chat_id, JSON.stringify(cachedData));
             }
@@ -874,6 +884,8 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                 return;
             }
 
+
+            //TODO: Divide them according to the provider and bpp_id the object 
             const messageId = savedData.message_id;
             const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
             const itemsForAPICall = [];
@@ -887,7 +899,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                         "count": itemData.count
                     }
                 });
-                provderId = itemData.provder_id
+                provderId = itemData.provider_id
                 providerLocations = {
                     "id": itemData.location_id
                 }
@@ -895,39 +907,39 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                 bppUri = itemData.bpp_uri
             });
 
-            const addToCartResp = await selectAddToCartAPI({
-                transactionId: transactionId,
-                messageId: messageId,
-                providerId: provderId,
-                providerLocations: providerLocations,
-                items: itemsForAPICall,
-                bppUri: bppUri, bppId: bppId
-            });
 
-            if (addToCartResp) {
+            const itemsOnProviders = seperateItemsOnProvider(selectedItemDetails);
+            try {
+                Object.keys(itemsOnProviders).forEach(async (providerUniqueId) => {
+                    const itemProvider = itemsOnProviders[providerUniqueId];
+                    const addToCartResp = await selectAddToCartAPI({
+                        ...itemProvider,
+                        transactionId: transactionId,
+                        messageId: messageId,
+                    });
 
-                cachedData['nextStep'] = retailSteps.waitForQouteCallback;
-                redis.set(chat_id, JSON.stringify(cachedData));
-
-                // TODO: TEMP Implement this in prod.
-                await db.getDB().collection('ongoing').updateOne({
-                    _id: savedData._id
-                }, {
-                    $set: {
-                        message_id: addToCartResp.context.message_id
+                    if (addToCartResp) {
+                        console.log(addToCartResp)
+                    }
+                    else {
+                        throw {
+                            "Error": "Api call failed."
+                        }
                     }
                 });
 
+                cachedData['nextStep'] = retailSteps.waitForQouteCallback;
+                redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
                     text: retailMsgs.proceedCheckout
                 });
-            }
-            else {
+            } catch (error) {
+                console.log(error);
                 replySender({
                     chat_id: chat_id,
                     text: "Something went wrong."
-                });
+                })
             }
         }
     });
@@ -998,7 +1010,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
                         "count": itemData.count
                     }
                 });
-                provderId = itemData.provder_id
+                provderId = itemData.provider_id
                 providerLocations = {
                     "id": itemData.location_id
                 }
@@ -1065,9 +1077,9 @@ const trackOrderCallback = async (chat_id, transactionId) => {
             "core_version": "0.9.3",
             "city": "std:080",
             "country": "IND",
-            "bpp_id":bppId,
-            "bpp_uri":bppUri,
-            "transaction_id":transactionId
+            "bpp_id": bppId,
+            "bpp_uri": bppUri,
+            "transaction_id": transactionId
         },
         "message": {
             "order_id": orderId
@@ -1083,7 +1095,7 @@ const trackOrderCallback = async (chat_id, transactionId) => {
         console.log(response.data);
     } catch (error) {
         console.log(error);
-    }    
+    }
 }
 const orderStatusCallback = async (chat_id, transactionId) => {
     const savedData = await db.getDB().collection('completed').findOne({
@@ -1100,9 +1112,9 @@ const orderStatusCallback = async (chat_id, transactionId) => {
             "core_version": "0.9.3",
             "city": "std:080",
             "country": "IND",
-            "bpp_id":bppId,
-            "bpp_uri":bppUri,
-            transaction_id:transactionId
+            "bpp_id": bppId,
+            "bpp_uri": bppUri,
+            transaction_id: transactionId
         },
         "message": {
             "order_id": orderId
@@ -1118,7 +1130,7 @@ const orderStatusCallback = async (chat_id, transactionId) => {
         console.log(response.data);
     } catch (error) {
         console.log(error);
-    }    
+    }
 }
 
 const getSelectItemDetails = (items, selectedItems) => {
@@ -1152,11 +1164,11 @@ const searchForItemsAPI = async (itemName, location, transactionId) => {
             "country": "IND",
             "transaction_id": transactionId,
 
-            // // TODO: TEMP Remove in prod.
-            // "bpp_id": "bpp1.beckn.org",
-            // "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+            // TODO: TEMP Remove in prod.
+            "bpp_id": "bpp1.beckn.org",
+            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
 
-            // "bpp_id": "mindy.succinct.in",
+            // "bpp_id": "venky.succinct.in",
             // "bpp_uri": "https://beckn-one.succinct.in/bg/"
         },
         "message": {
@@ -1269,36 +1281,18 @@ const createInitAPIInfo = async (cachedData) => {
 
     const messageId = cachedData.message_id;
     const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-    const itemsForAPICall = [];
-    let provderId;
-    let providerLocations;
-    let bppId, bppUri;
-    selectedItemDetails.forEach((itemData) => {
-        itemsForAPICall.push({
-            "id": itemData.id,
-            "quantity": {
-                "count": itemData.count
-            }
-        });
-        provderId = itemData.provder_id
-        providerLocations = {
-            "id": itemData.location_id
+    const itemsOnProviders = seperateItemsOnProvider(selectedItemDetails);
+    Object.keys(itemsOnProviders).forEach((providerUniqueId) => {
+        itemsOnProviders[providerUniqueId] = {
+            ...itemsOnProviders[providerUniqueId],
+            transactionId: transactionId,
+            messageId: messageId,
+            billingInfo: cachedData['billing'],
+            fulfillmentInfo: cachedData['fulfillment'],
         }
-        bppId = itemData.bpp_id
-        bppUri = itemData.bpp_uri
-    });
+    })
 
-    return {
-        transactionId,
-        messageId,
-        billingInfo: cachedData['billing'],
-        fulfillmentInfo: cachedData['fulfillment'],
-        bppId,
-        bppUri,
-        items: itemsForAPICall,
-        provderId,
-        providerLocations
-    }
+    return itemsOnProviders;
 }
 
 const initOrderAPI = async ({
@@ -1454,6 +1448,33 @@ const getRetailItemText = ({
     return text;
 }
 
+const seperateItemsOnProvider = (selectedItemDetails) => {
+    const itemsOnProviders = {};
+    selectedItemDetails.forEach((itemData) => {
+        if (!itemsOnProviders[itemData.provider_unique_id]) {
+            itemsOnProviders[itemData.provider_unique_id] = {
+                provider_unique_id: itemData.provider_unique_id,
+                provderId: itemData.provider_id,
+                providerLocations: {
+                    'id': itemData.location_id
+                },
+                items: [],
+                bppId: itemData.bpp_id,
+                bppUri: itemData.bpp_uri
+            }
+        }
+
+        itemsOnProviders[itemData.provider_unique_id].items.push({
+            "id": itemData.id,
+            "quantity": {
+                "count": itemData.count
+            }
+        });
+    });
+
+    return itemsOnProviders;
+}
+
 const retailSteps = {
     location: "location",
     itemName: "itemName",
@@ -1564,6 +1585,7 @@ module.exports = {
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
     getSelectItemDetails,
+    seperateItemsOnProvider,
 
     // Callbacks
     nextItemsCallback,
