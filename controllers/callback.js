@@ -30,9 +30,9 @@ const callBackController = async (req, res, next) => {
 
                     const chat_id = savedData.chat_id;
                     // if cache queue is empty use print the current items.
-                    const toDisplayItems = (await ioredis.llen("chat_id"+chat_id))==0;
+                    const toDisplayItems = (await ioredis.llen("chat_id" + chat_id)) == 0;
 
-                    const transactionId=savedData.transaction_id;
+                    const transactionId = savedData.transaction_id;
                     bpp_providers.forEach((providerData) => {
                         const locationData = providerData['locations'];
                         const shopDetails = providerData['descriptor'];
@@ -177,6 +177,7 @@ const callBackController = async (req, res, next) => {
                                 return;
                             }
 
+                            const orderInfo = data.message.order;
                             const paymentData = data.message.order.payment;
                             await db.getDB().collection('ongoing').updateOne({
                                 _id: savedData._id
@@ -185,7 +186,20 @@ const callBackController = async (req, res, next) => {
                                     payment: paymentData
                                 }
                             });
-                            const paymentText = "Please Confirm your order.\n\nAmount: *Rs. " + paymentData.params.amount + "*\n\nPayment Method: *Cash on Delivery.*";
+                            let paymentText = "Please Confirm your order.\n";
+                            paymentText += "\n*Costings*\n";
+
+                            let currItemIdx = 1;
+                            orderInfo.quote.breakup.forEach((breakupItem) => {
+                                paymentText += "\n*" + currItemIdx + "*";
+                                paymentText += "\n*" + breakupItem.title + "*";
+                                paymentText += "\nCost: *Rs. " + breakupItem.price.value + "*\n";
+                                currItemIdx++;
+                            });
+
+                            paymentText += "\nAmount: *Rs. " + paymentData.params.amount;
+                            paymentText += "*\n\nPayment Method: *Cash on Delivery.*";
+
                             const reply_markup = {
                                 inline_keyboard: [
                                     [
