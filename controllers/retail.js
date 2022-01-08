@@ -913,7 +913,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                 transaction_id: transactionId
             }, {
                 $set: {
-                    selecteditemsOnProviders:itemsOnProviders
+                    selecteditemsOnProviders: itemsOnProviders
                 }
             });
 
@@ -1013,7 +1013,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             try {
                 // Add Payment data to itemsOnProviders.
                 paymentsInfo.forEach((paymentInfo) => {
-                    if(itemsOnProviders[paymentInfo.provider_unique_id]){
+                    if (itemsOnProviders[paymentInfo.provider_unique_id]) {
                         itemsOnProviders[paymentInfo.provider_unique_id]['paymentInfo'] = paymentInfo;
                     }
                 });
@@ -1027,15 +1027,16 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
                         billingInfo: cachedData['billing'],
                         fulfillmentInfo: cachedData['fulfillment'],
                     });
-
-                    replySender({
-                        chat_id: chat_id,
-                        text: retailMsgs.waitForConfirmCallback
-                    });
-                    
-                    cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
-                    redis.set(chat_id, JSON.stringify(cachedData));
                 })
+
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs.waitForConfirmCallback
+                });
+
+                cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
+                redis.set(chat_id, JSON.stringify(cachedData));
+
             } catch (error) {
                 console.log(error)
                 replySender({
@@ -1047,14 +1048,14 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
     });
 }
 
-const trackOrderCallback = async (chat_id, transactionId) => {
-    const savedData = await db.getDB().collection('completed').findOne({
-        transaction_id: transactionId,
+const trackOrderCallback = async (chat_id, shortOrderId) => {
+    const savedData = await db.getDB().collection('confirmed_orders').findOne({
+        short_order_id: ObjectId(shortOrderId),
     });
 
-    const orderId = savedData.order.id;
-    const bppId = savedData.onConfirmCallback.context.bpp_id;
-    const bppUri = savedData.onConfirmCallback.context.bpp_uri;
+    const orderId = savedData.message.order.id;
+    const bppId = savedData.context.bpp_id;
+    const bppUri = savedData.context.bpp_uri;
 
     const reqBody = {
         "context": {
@@ -1063,33 +1064,43 @@ const trackOrderCallback = async (chat_id, transactionId) => {
             "city": "std:080",
             "country": "IND",
             "bpp_id": bppId,
-            "bpp_uri": bppUri,
-            "transaction_id": transactionId
+            "bpp_uri": bppUri
         },
         "message": {
             "order_id": orderId
         }
     }
 
+    // console.log(reqBody)
+
     try {
         const response = await axios.post(
             `${process.env.becknService}/trigger/track`,
             reqBody
         );
-
+        
+        // Update the transaction id that you will get from API call.
+        const transactionId=response.data.context.transaction_id;
+        await db.getDB().collection('confirmed_orders').updateOne({
+            _id: savedData._id
+        }, {
+            $set: {
+                transaction_id: transactionId
+            }
+        })
         console.log(response.data);
     } catch (error) {
         console.log(error);
     }
 }
-const orderStatusCallback = async (chat_id, transactionId) => {
-    const savedData = await db.getDB().collection('completed').findOne({
-        transaction_id: transactionId,
+const orderStatusCallback = async (chat_id, shortOrderId) => {
+    const savedData = await db.getDB().collection('confirmed_orders').findOne({
+        short_order_id: ObjectId(shortOrderId),
     });
 
-    const orderId = savedData.order.id;
-    const bppId = savedData.onConfirmCallback.context.bpp_id;
-    const bppUri = savedData.onConfirmCallback.context.bpp_uri;
+    const orderId = savedData.message.order.id;
+    const bppId = savedData.context.bpp_id;
+    const bppUri = savedData.context.bpp_uri;
 
     const reqBody = {
         "context": {
@@ -1098,8 +1109,7 @@ const orderStatusCallback = async (chat_id, transactionId) => {
             "city": "std:080",
             "country": "IND",
             "bpp_id": bppId,
-            "bpp_uri": bppUri,
-            transaction_id: transactionId
+            "bpp_uri": bppUri
         },
         "message": {
             "order_id": orderId
@@ -1112,6 +1122,15 @@ const orderStatusCallback = async (chat_id, transactionId) => {
             reqBody
         );
 
+        // Update the transaction id that you will get from API call.
+        const transactionId=response.data.context.transaction_id;
+        await db.getDB().collection('confirmed_orders').updateOne({
+            _id: savedData._id
+        }, {
+            $set: {
+                transaction_id: transactionId
+            }
+        })
         console.log(response.data);
     } catch (error) {
         console.log(error);

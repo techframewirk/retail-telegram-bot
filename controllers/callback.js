@@ -161,6 +161,7 @@ const callBackController = async (req, res, next) => {
             }
                 break;
             case 'on_init': {
+                console.log(data.context.bpp_id)
                 const currOrder = data.message.order;
                 const providerUniqueId = retail.createProviderId({
                     bpp_id: data.context.bpp_id,
@@ -270,135 +271,142 @@ const callBackController = async (req, res, next) => {
             }
                 break;
             case 'on_confirm':
-                // Save this data in onConfirmCallbacks of ongoing.
-                await db.getDB().collection('ongoing').updateOne({
-                    transaction_id: data.context.transaction_id
-                }, {
-                    $addToSet: {
-                        onConfirmCallbacks: data,
-                    }
-                });
-
-                const messageId = data.context.message_id;
-                // Save this confirm orders in the other db called confirm_orders.
-                const confOrdInfo = await db.getDB().collection('confirmed_orders').insertOne({
-                    ...data,
-                    order_id: data.message.order.id,
-                    message_id: messageId
-                })
-
-                // Send message with data, track and status
-                const transactionId = data.context.transaction_id;
-                const savedData = await db.getDB().collection('ongoing').findOne({
-                    transaction_id: transactionId,
-                    isResolved: false
-                });
-
-                const chat_id = savedData.chat_id;
-                if (data.error) {
-                    replySender({
-                        chat_id: chat_id,
-                        text: "*Order Confirmation Failed.*\n" + data.error.message
-                    });
-                    return;
-                }
-
-                if (savedData == null) {
-                    break;
-                }
-
-                // TODO: check whether next step is wait for confirm callback or not.
-                redis.get(chat_id, async (err, reply) => {
-                    if (err) {
-                        replySender({
-                            chat_id: chat_id,
-                            text: "Something went Wrong"
-                        });
-                        console.log(err)
-                    }
-                    else {
-                        const cachedData = JSON.parse(reply)
-                        if (!cachedData) {
-                            return;
+                {
+                    console.log(data.context.bpp_id)
+                    // Save this data in onConfirmCallbacks of ongoing.
+                    await db.getDB().collection('ongoing').updateOne({
+                        transaction_id: data.context.transaction_id
+                    }, {
+                        $addToSet: {
+                            onConfirmCallbacks: data,
                         }
+                    });
 
-                        const orderId = data.message.order.id;
-                        const orderState = data.message.order.state;
-                        const orderInfo = data.message.order;
+                    const messageId = data.context.message_id;
+                    const shortOrderId = ObjectID();
+                    // Send message with data, track and status
+                    const transactionId = data.context.transaction_id;
+                    const savedData = await db.getDB().collection('ongoing').findOne({
+                        transaction_id: transactionId,
+                        isResolved: false
+                    });
 
-                        let orderText = "*Order Confirmation*\n";
-                        orderText += "\nOrder Id: *" + orderId + "*\n";
-                        orderText += "\n*Costings*\n";
+                    const chat_id = savedData.chat_id;
+                    
+                    // Save this confirm orders in the other db called confirm_orders.
+                    await db.getDB().collection('confirmed_orders').insertOne({
+                        ...data,
+                        order_id: data.message.order.id,
+                        message_id: messageId,
+                        short_order_id: shortOrderId,
+                        chat_id:chat_id
+                    })
 
-                        let currItemIdx = 1;
-                        orderInfo.quote.breakup.forEach((breakupItem) => {
-                            orderText += "\n*" + currItemIdx + "*";
-                            orderText += "\n*" + breakupItem.title + "*";
-                            orderText += "\nCost: *Rs. " + breakupItem.price.value + "*\n";
-                            currItemIdx++;
-                        });
-
-                        orderText += "\nTotal Amount: *Rs. " + orderInfo.quote.price.value + "*\n";
-                        orderText += "\nThanks for shopping with us.\n"
-
-                        const reply_markup = {
-                            inline_keyboard: [
-                                [
-                                    {
-                                        text: "Track Order",
-                                        callback_data: callbackUtils.encrypt({
-                                            type: 'retail',
-                                            commandType: retail.callbackTypes.trackOrder,
-                                            id: messageId
-                                        })
-                                    },
-                                    {
-                                        text: "Order Status",
-                                        callback_data: callbackUtils.encrypt({
-                                            type: 'retail',
-                                            commandType: retail.callbackTypes.orderStatus,
-                                            id: messageId
-                                        })
-                                    }
-                                ]
-                            ],
-                            "resize_keyboard": true,
-                            "one_time_keyboard": true
-                        };
-
+                    if (data.error) {
                         replySender({
                             chat_id: chat_id,
-                            text: orderText,
-                            reply_markup: JSON.stringify(reply_markup)
+                            text: "*Order Confirmation Failed.*\n" + data.error.message
                         });
-
+                        return;
                     }
-                })
 
-                // We remove this flow data completely from ongoing when onConfirmCallback is enough.
-                const reqLength = Object.keys(savedData.selecteditemsOnProviders).length;
-                if (reqLength > savedData.onConfirmCallbacks.length) {
-                    console.log("Waiting for more callbacks.")
-                    break;
+                    if (savedData == null) {
+                        break;
+                    }
+
+                    // TODO: check whether next step is wait for confirm callback or not.
+                    redis.get(chat_id, async (err, reply) => {
+                        if (err) {
+                            replySender({
+                                chat_id: chat_id,
+                                text: "Something went Wrong"
+                            });
+                            console.log(err)
+                        }
+                        else {
+                            const cachedData = JSON.parse(reply)
+                            if (!cachedData) {
+                                return;
+                            }
+
+                            const orderId = data.message.order.id;
+                            const orderState = data.message.order.state;
+                            const orderInfo = data.message.order;
+
+                            let orderText = "*Order Confirmation*\n";
+                            orderText += "\nOrder Id: *" + orderId + "*\n";
+                            orderText += "\n*Costings*\n";
+
+                            let currItemIdx = 1;
+                            orderInfo.quote.breakup.forEach((breakupItem) => {
+                                orderText += "\n*" + currItemIdx + "*";
+                                orderText += "\n*" + breakupItem.title + "*";
+                                orderText += "\nCost: *Rs. " + breakupItem.price.value + "*\n";
+                                currItemIdx++;
+                            });
+
+                            orderText += "\nTotal Amount: *Rs. " + orderInfo.quote.price.value + "*\n";
+                            orderText += "\nThanks for shopping with us.\n"
+
+                            const reply_markup = {
+                                inline_keyboard: [
+                                    [
+                                        {
+                                            text: "Track Order",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.trackOrder,
+                                                id: shortOrderId
+                                            })
+                                        },
+                                        {
+                                            text: "Order Status",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.orderStatus,
+                                                id: shortOrderId
+                                            })
+                                        }
+                                    ]
+                                ],
+                                "resize_keyboard": true,
+                                "one_time_keyboard": true
+                            };
+
+                            replySender({
+                                chat_id: chat_id,
+                                text: orderText,
+                                reply_markup: JSON.stringify(reply_markup)
+                            });
+
+                        }
+                    })
+
+                    // We remove this flow data completely from ongoing when onConfirmCallback is enough.
+                    const reqLength = Object.keys(savedData.selecteditemsOnProviders).length;
+                    if (reqLength > savedData.onConfirmCallbacks.length) {
+                        console.log("Waiting for more callbacks.")
+                        break;
+                    }
+
+                    await db.getDB().collection('ongoing').deleteOne({
+                        _id: savedData._id
+                    })
+
+                    savedData['_id'] = undefined;
+                    await db.getDB().collection('completed').insertOne({
+                        ...savedData
+                    })
                 }
-
-                await db.getDB().collection('ongoing').deleteOne({
-                    _id: savedData._id
-                })
-
-                savedData['_id'] = undefined;
-                await db.getDB().collection('completed').insertOne({
-                    ...savedData
-                })
 
                 break
             case 'on_track':
                 try {
-                    const savedData = await db.getDB().collection('completed').findOne({
+                    const savedData = await db.getDB().collection('confirmed_orders').findOne({
                         transaction_id: data.context.transaction_id,
                     });
 
-                    const orderId = savedData.order.id;
+                    const orderId = savedData.message.order.id;
                     let trackText = "*Order Tracking*\n";
                     trackText += "\nOrder ID: *" + orderId + "*\n";
                     trackText += "\nUse this link to track your order.\n";
@@ -416,11 +424,11 @@ const callBackController = async (req, res, next) => {
                 break
             case 'on_status':
                 try {
-                    const savedData = await db.getDB().collection('completed').findOne({
+                    const savedData = await db.getDB().collection('confirmed_orders').findOne({
                         transaction_id: data.context.transaction_id,
                     });
 
-                    const orderId = savedData.order.id;
+                    const orderId = savedData.order_id;
                     const orderState = data.message.order.state;
                     const paymentInfo = data.message.order.payment;
 
