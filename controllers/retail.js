@@ -690,7 +690,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const displayItemCount = 2;
+const displayItemCount = 5;
 
 const anotherSearchCallback = async (chat_id, transactionId) => {
     try {
@@ -909,6 +909,14 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
 
 
             const itemsOnProviders = seperateItemsOnProvider(selectedItemDetails);
+            await db.getDB().collection('ongoing').updateOne({
+                transaction_id: transactionId
+            }, {
+                $set: {
+                    selecteditemsOnProviders:itemsOnProviders
+                }
+            });
+
             try {
                 Object.keys(itemsOnProviders).forEach(async (providerUniqueId) => {
                     const itemProvider = itemsOnProviders[providerUniqueId];
@@ -926,6 +934,8 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                             "Error": "Api call failed."
                         }
                     }
+
+                    console.log(providerUniqueId);
                 });
 
                 cachedData['nextStep'] = retailSteps.waitForQouteCallback;
@@ -1003,7 +1013,9 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             try {
                 // Add Payment data to itemsOnProviders.
                 paymentsInfo.forEach((paymentInfo) => {
-                    itemsOnProviders[paymentInfo.provider_unique_id]['paymentInfo'] = paymentInfo;
+                    if(itemsOnProviders[paymentInfo.provider_unique_id]){
+                        itemsOnProviders[paymentInfo.provider_unique_id]['paymentInfo'] = paymentInfo;
+                    }
                 });
 
                 Object.keys(itemsOnProviders).forEach(async (providerUniqueId) => {
@@ -1137,9 +1149,9 @@ const searchForItemsAPI = async (itemName, location, transactionId) => {
             "country": "IND",
             "transaction_id": transactionId,
 
-            // TODO: TEMP Remove in prod.
-            "bpp_id": "bpp1.beckn.org",
-            "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
+            // // TODO: TEMP Remove in prod.
+            // "bpp_id": "bpp1.beckn.org",
+            // "bpp_uri": "https://bpp1.beckn.org/rest/V1/beckn/"
 
             // "bpp_id": "venky.succinct.in",
             // "bpp_uri": "https://beckn-one.succinct.in/bg/"

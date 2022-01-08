@@ -88,6 +88,7 @@ const callBackController = async (req, res, next) => {
             }
                 break
             case 'on_select': { 
+                console.log(data.context.bpp_id)
                 const currQouteData = data.message.order.quote;
                 await db.getDB().collection('ongoing').updateOne({
                     transaction_id: data.context.transaction_id
@@ -107,7 +108,7 @@ const callBackController = async (req, res, next) => {
                     break;
                 }
 
-                const reqLength=Object.keys(retail.seperateItemsOnProvider(savedData.items)).length;
+                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
                 if(reqLength>savedData.onSelectCallbacks.length){
                     console.log("Waiting for more callbacks.")
                     break;
@@ -141,7 +142,7 @@ const callBackController = async (req, res, next) => {
                                 qouteText += "\n*" + itemData.title + "*\n";
                                 qouteText += "Cost : *Rs. " + itemData.price.value + "*\n";
                             });
-                            totalCost+=qoute.price.value
+                            totalCost+=parseFloat(qoute.price.value)
                         });
                         qouteText += "\nTotal : *Rs. " + totalCost + "*\n";
                         qouteText += "\nPlease Enter billing details to proceed further.\n";
@@ -186,7 +187,7 @@ const callBackController = async (req, res, next) => {
                     break;
                 }
                 
-                const reqLength=Object.keys(retail.seperateItemsOnProvider(savedData.items)).length;
+                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
                 if(reqLength>savedData.onInitCallbacks.length){
                     console.log("Waiting for more callbacks.")
                     break;
@@ -224,7 +225,7 @@ const callBackController = async (req, res, next) => {
                             });
 
                             const paymentData=orderInfo.payment;
-                            totalCost+=paymentData.params.amount;
+                            totalCost+=parseFloat(paymentData.params.amount);
                         });
 
 
@@ -373,7 +374,7 @@ const callBackController = async (req, res, next) => {
                 })
                 
                 // We remove this flow data completely from ongoing when onConfirmCallback is enough.
-                const reqLength=Object.keys(retail.seperateItemsOnProvider(savedData.items)).length;
+                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
                 if(reqLength>savedData.onConfirmCallbacks.length){
                     console.log("Waiting for more callbacks.")
                     break;
