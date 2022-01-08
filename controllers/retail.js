@@ -68,17 +68,17 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemName;
-                // TODO: TEMP Make it org in prod.
+                // TODO: TEMP Make it ORG in prod.
                 // ORG Code.
                 updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
-                
+
                 // // Temp Code 1
                 // updateCachedData['location'] = "12.4535445,77.9283792";
-            
+
                 // // Temp Code 2
                 // updateCachedData['location'] = "28.528173,77.202997";
 
-                
+
                 redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
                 replySender({
                     chat_id: data.message.chat.id,
@@ -344,63 +344,19 @@ const handleRetail = async (cachedData, data) => {
                         }
                     }
                     cachedData['fulfillment'] = fulfillment;
-                    const transactionId = cachedData.transaction_id;
-                    const savedData = await db.getDB().collection('ongoing').findOne({
-                        transaction_id: transactionId
-                    });
 
-                    if (!savedData) {
-                        replySender({
-                            chat_id: chat_id,
-                            text: "Invalid Call..."
-                        });
-                        return;
-                    }
+                    const requiredInitInfo = await createInitAPIInfo(cachedData)
+                    const initOrderResp = await initOrderAPI(requiredInitInfo);
 
-                    // TODO: create a seperate function for that.
-                    // Try to handle multiprovider here.
-                    const messageId = cachedData.message_id;
-                    const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-                    const itemsForAPICall = [];
-                    let provderId;
-                    let providerLocations;
-                    let bppId, bppUri;
-                    selectedItemDetails.forEach((itemData) => {
-                        itemsForAPICall.push({
-                            "id": itemData.id,
-                            "quantity": {
-                                "count": itemData.count
-                            }
-                        });
-                        provderId = itemData.provder_id
-                        providerLocations = {
-                            "id": itemData.location_id
-                        }
-                        bppId = itemData.bpp_id
-                        bppUri = itemData.bpp_uri
-                    });
-
-                    const initOrderResp = await initOrderAPI({
-                        transactionId: transactionId,
-                        messageId: messageId,
-                        billingInfo: cachedData['billing'],
-                        fulfillmentInfo: cachedData['fulfillment'],
-                        bppId: bppId,
-                        bppUri: bppUri,
-                        items: itemsForAPICall,
-                        providerId: provderId,
-                        providerLocations: providerLocations
-                    });
-    
                     console.log(initOrderResp)
                     cachedData['nextStep'] = retailSteps.waitForInitCallback;
                     redis.set(data.message.chat.id, JSON.stringify(cachedData))
                     replySender({
                         chat_id: data.message.chat.id,
                         text: retailMsgs.waitForInitCallback,
-                    });    
+                    });
                 }
-                else if((data.message.text.trim().toLowerCase() == 'n') || (data.message.text.trim().toLowerCase() == "n")) {
+                else if ((data.message.text.trim().toLowerCase() == 'n') || (data.message.text.trim().toLowerCase() == "n")) {
                     const fulfillment = {
                         "type": "HOME-DELIVERY",
                         "tracking": true,
@@ -423,7 +379,7 @@ const handleRetail = async (cachedData, data) => {
                         text: retailMsgs.shipping_email,
                     });
                 }
-                else{
+                else {
                     replySender({
                         chat_id: data.message.chat.id,
                         text: "Invalid Choice",
@@ -576,53 +532,10 @@ const handleRetail = async (cachedData, data) => {
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['area_code'] = data.message.text;
 
-                // Try to create a function for this code.
                 cachedData['fulfillment'] = fulfillmentInfo;
-                const transactionId = cachedData.transaction_id;
-                const savedData = await db.getDB().collection('ongoing').findOne({
-                    transaction_id: transactionId
-                });
-
-                if (!savedData) {
-                    replySender({
-                        chat_id: chat_id,
-                        text: "Invalid Call..."
-                    });
-                    return;
-                }
-
-                const messageId = cachedData.message_id;
-                const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-                const itemsForAPICall = [];
-                let provderId;
-                let providerLocations;
-                let bppId, bppUri;
-                selectedItemDetails.forEach((itemData) => {
-                    itemsForAPICall.push({
-                        "id": itemData.id,
-                        "quantity": {
-                            "count": itemData.count
-                        }
-                    });
-                    provderId = itemData.provder_id
-                    providerLocations = {
-                        "id": itemData.location_id
-                    }
-                    bppId = itemData.bpp_id
-                    bppUri = itemData.bpp_uri
-                });
-
-                const initOrderResp = await initOrderAPI({
-                    transactionId: transactionId,
-                    messageId: messageId,
-                    billingInfo: cachedData['billing'],
-                    fulfillmentInfo: cachedData['fulfillment'],
-                    bppId: bppId,
-                    bppUri: bppUri,
-                    items: itemsForAPICall,
-                    providerId: provderId,
-                    providerLocations: providerLocations
-                });
+                
+                const requiredInitInfo = await createInitAPIInfo(cachedData)
+                const initOrderResp = await initOrderAPI(requiredInitInfo);
 
                 console.log(initOrderResp)
                 cachedData['nextStep'] = retailSteps.waitForInitCallback;
@@ -633,80 +546,6 @@ const handleRetail = async (cachedData, data) => {
                 });
             }
             break;
-
-        // case retailSteps.shipping_location:
-        //     if (data.message.location) {
-        //         // TODO: apply validation.
-        //         const fulfillmentInfo = cachedData['fulfillment'];
-        //         fulfillmentInfo['end']['location']['gps'] = `${data.message.location.latitude},${data.message.location.longitude}`;
-
-        //         // // TODO: TEMP remove in production.
-        //         // fulfillmentInfo['end']['location']['gps'] = "12.4535445,77.9283792";
-
-        //         cachedData['fulfillment'] = fulfillmentInfo;
-        //         // console.log(JSON.stringify(cachedData));
-
-        //         const transactionId = cachedData.transaction_id;
-        //         const savedData = await db.getDB().collection('ongoing').findOne({
-        //             transaction_id: transactionId
-        //         });
-
-        //         if (!savedData) {
-        //             replySender({
-        //                 chat_id: chat_id,
-        //                 text: "Invalid Call..."
-        //             });
-        //             return;
-        //         }
-
-        //         const messageId = cachedData.message_id;
-        //         const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-        //         const itemsForAPICall = [];
-        //         let provderId;
-        //         let providerLocations;
-        //         let bppId, bppUri;
-        //         selectedItemDetails.forEach((itemData) => {
-        //             itemsForAPICall.push({
-        //                 "id": itemData.id,
-        //                 "quantity": {
-        //                     "count": itemData.count
-        //                 }
-        //             });
-        //             provderId = itemData.provder_id
-        //             providerLocations = {
-        //                 "id": itemData.location_id
-        //             }
-        //             bppId = itemData.bpp_id
-        //             bppUri = itemData.bpp_uri
-        //         });
-
-        //         const initOrderResp = await initOrderAPI({
-        //             transactionId: transactionId,
-        //             messageId: messageId,
-        //             billingInfo: cachedData['billing'],
-        //             fulfillmentInfo: cachedData['fulfillment'],
-        //             bppId: bppId,
-        //             bppUri: bppUri,
-        //             items: itemsForAPICall,
-        //             providerId: provderId,
-        //             providerLocations: providerLocations
-        //         });
-
-        //         console.log(initOrderResp)
-        //         cachedData['nextStep'] = retailSteps.waitForInitCallback;
-        //         redis.set(data.message.chat.id, JSON.stringify(cachedData))
-        //         replySender({
-        //             chat_id: data.message.chat.id,
-        //             text: retailMsgs.waitForInitCallback,
-        //         });
-        //     }
-        //     else {
-        //         replySender({
-        //             chat_id: data.message.chat.id,
-        //             text: "That does not seem like a location! Please try again!"
-        //         });
-        //     }
-        //     break;
     }
 }
 
@@ -1343,6 +1182,54 @@ const selectAddToCartAPI = async ({
     }
 }
 
+const createInitAPIInfo = async (cachedData) => {
+    const transactionId = cachedData.transaction_id;
+    const savedData = await db.getDB().collection('ongoing').findOne({
+        transaction_id: transactionId
+    });
+
+    if (!savedData) {
+        replySender({
+            chat_id: chat_id,
+            text: "Invalid Call..."
+        });
+        return;
+    }
+
+    const messageId = cachedData.message_id;
+    const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
+    const itemsForAPICall = [];
+    let provderId;
+    let providerLocations;
+    let bppId, bppUri;
+    selectedItemDetails.forEach((itemData) => {
+        itemsForAPICall.push({
+            "id": itemData.id,
+            "quantity": {
+                "count": itemData.count
+            }
+        });
+        provderId = itemData.provder_id
+        providerLocations = {
+            "id": itemData.location_id
+        }
+        bppId = itemData.bpp_id
+        bppUri = itemData.bpp_uri
+    });
+
+    return {
+        transactionId,
+        messageId,
+        billingInfo: cachedData['billing'],
+        fulfillmentInfo: cachedData['fulfillment'],
+        bppId,
+        bppUri,
+        items: itemsForAPICall,
+        provderId,
+        providerLocations
+    }
+}
+
 const initOrderAPI = async ({
     transactionId,
     messageId,
@@ -1355,7 +1242,7 @@ const initOrderAPI = async ({
 }) => {
     fulfillmentInfo.customer = {}
     fulfillmentInfo.customer.person = {}
-    fulfillmentInfo.customer.person.name =  billingInfo.name;
+    fulfillmentInfo.customer.person.name = billingInfo.name;
     let reqBody = {
         "context": {
             "domain": retailDomain,
@@ -1416,7 +1303,7 @@ const confirmOrderAPI = async ({
 }) => {
     fulfillmentInfo.customer = {}
     fulfillmentInfo.customer.person = {}
-    fulfillmentInfo.customer.person.name =  billingInfo.name;
+    fulfillmentInfo.customer.person.name = billingInfo.name;
     const reqBody = {
         "context": {
             "domain": retailDomain,
