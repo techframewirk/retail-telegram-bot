@@ -45,11 +45,6 @@ const callBackController = async (req, res, next) => {
                         });
 
                         providerData.items.forEach((itemData) => {
-                            // const itemUniqueId = retail.createItemId({
-                            //     bpp_id: bppId,
-                            //     providerId: providerId,
-                            //     itemId: itemData.id
-                            // });
 
                             const itemUniqueId = ObjectID();
                             const itemDetail = {
@@ -287,12 +282,39 @@ const callBackController = async (req, res, next) => {
 
                             orderText += "\nTotal Amount: *Rs. " + orderInfo.quote.price.value + "*\n";
                             orderText += "\nThanks for shopping with us.\n"
+                            
+                            const reply_markup = {
+                                inline_keyboard: [
+                                    [
+                                        {
+                                            text: "Track Order",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.trackOrder,
+                                                id: transactionId
+                                            })
+                                        },
+                                        {
+                                            text: "Order Status",
+                                            callback_data: callbackUtils.encrypt({
+                                                type: 'retail',
+                                                commandType: retail.callbackTypes.orderStatus,
+                                                id: transactionId
+                                            })
+                                        }
+                                    ]
+                                ],
+                                "resize_keyboard": true,
+                                "one_time_keyboard": true
+                            };
 
                             replySender({
                                 chat_id: chat_id,
-                                text: orderText
+                                text: orderText,
+                                reply_markup: JSON.stringify(reply_markup)
                             });
 
+                            savedData['onConfirmCallback']=data;
                             savedData['order'] = orderInfo;
                             savedData['isResolved'] = true;
 
@@ -306,6 +328,67 @@ const callBackController = async (req, res, next) => {
                             })
                         }
                     })
+                }
+                break
+            case 'on_track':
+                try {
+                    const savedData = await db.getDB().collection('completed').findOne({
+                        transaction_id: data.context.transaction_id,
+                    });
+    
+                    const orderId=savedData.order.id;
+                    let trackText="*Order Tracking*\n";
+                    trackText+="\nOrder ID: *"+orderId+"*\n";
+                    trackText+="\nUse this link to track your order.\n";
+                    trackText+=data.message.tracking.url+"\n";
+                    trackText+="\nStatus: *"+data.message.tracking.status+"*"
+    
+                    replySender({
+                        chat_id: savedData.chat_id,
+                        text: trackText
+                    });
+                } catch (error) {
+                    console.log(error)
+                }
+
+                break
+            case 'on_status':
+                try {
+                    const savedData = await db.getDB().collection('completed').findOne({
+                        transaction_id: data.context.transaction_id,
+                    });
+
+                    const orderId=savedData.order.id;
+                    const orderState=data.message.order.state;
+                    const paymentInfo=data.message.order.payment;
+                    
+                    let statusText="*Order Status*\n";
+                    statusText+="\nOrder ID: *"+orderId+"*\n";
+                    statusText+="\nStatus: *"+orderState+"*\n";
+
+                    try {
+                        const fulfillmentState=data.message.order.fulfillment.state;
+                        if(fulfillmentState){
+                            statusText+="\n*Fulfillment Info*\n";
+                            statusText+="Name: *"+fulfillmentState.descriptor.name+"*\n";
+                            statusText+="Code: *"+fulfillmentState.descriptor.code+"*\n";
+                        }
+                    } catch (error) {
+                        console.log(error)
+                    }
+
+                    statusText+="\n*Payment*\n";
+                    statusText+="Amount: *Rs. "+paymentInfo.params.amount+"*\n";
+                    statusText+="Status: *"+paymentInfo.status+"*";
+
+                    
+                    replySender({
+                        chat_id: savedData.chat_id,
+                        text: statusText
+                    });
+
+                } catch (error) {
+                    console.log(error)
                 }
                 break
             case 'on_update':
