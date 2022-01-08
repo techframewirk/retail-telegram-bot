@@ -997,62 +997,35 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             }
 
             const messageId = savedData.message_id;
-            const paymentInfo = savedData.payment;
             const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-            const itemsForAPICall = [];
-            let provderId;
-            let providerLocations;
-            let bppId, bppUri;
-            selectedItemDetails.forEach((itemData) => {
-                itemsForAPICall.push({
-                    "id": itemData.id,
-                    "quantity": {
-                        "count": itemData.count
-                    }
-                });
-                provderId = itemData.provider_id
-                providerLocations = {
-                    "id": itemData.location_id
-                }
-                bppId = itemData.bpp_id
-                bppUri = itemData.bpp_uri
-            });
-
-            const confirmOrderResp = await confirmOrderAPI({
-                transactionId: transactionId,
-                messageId: messageId,
-                billingInfo: cachedData['billing'],
-                fulfillmentInfo: cachedData['fulfillment'],
-                bppId: bppId,
-                bppUri: bppUri,
-                items: itemsForAPICall,
-                providerId: provderId,
-                paymentInfo: paymentInfo,
-                providerLocations: providerLocations
-            });
-
-
-            if (confirmOrderResp) {
-
-                cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
-                redis.set(chat_id, JSON.stringify(cachedData));
-
-                // TODO: TEMP Implement this in prod.
-                await db.getDB().collection('ongoing').updateOne({
-                    _id: savedData._id
-                }, {
-                    $set: {
-                        message_id: confirmOrderResp.context.message_id
-                    }
+            const itemsOnProviders = seperateItemsOnProvider(selectedItemDetails);
+            const paymentsInfo = savedData.payments;
+            try {
+                // Add Payment data to itemsOnProviders.
+                paymentsInfo.forEach((paymentInfo) => {
+                    itemsOnProviders[paymentInfo.provider_unique_id]['paymentInfo'] = paymentInfo;
                 });
 
-                // TODO: send an msg with order id and all.
-                replySender({
-                    chat_id: chat_id,
-                    text: retailMsgs.waitForConfirmCallback
-                });
-            }
-            else {
+                Object.keys(itemsOnProviders).forEach(async (providerUniqueId) => {
+                    const itemProvider = itemsOnProviders[providerUniqueId];
+                    const confirmOrderResp = await confirmOrderAPI({
+                        ...itemProvider,
+                        messageId: messageId,
+                        transactionId: transactionId,
+                        billingInfo: cachedData['billing'],
+                        fulfillmentInfo: cachedData['fulfillment'],
+                    });
+
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs.waitForConfirmCallback
+                    });
+                    
+                    cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
+                    redis.set(chat_id, JSON.stringify(cachedData));
+                })
+            } catch (error) {
+                console.log(error)
                 replySender({
                     chat_id: chat_id,
                     text: "Something went wrong."
