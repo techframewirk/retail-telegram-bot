@@ -20,7 +20,7 @@ const callBackController = async (req, res, next) => {
             case 'on_search': {
                 // For Fetching saved data.
                 const savedData = await db.getDB().collection('ongoing').findOne({
-                    message_id: data.context.message_id,
+                    transaction_id: data.context.transaction_id,
                     isResolved: false
                 })
                 if ((savedData) && (data.context.domain == domains.retail_call) || (data.context.domain == domains.retail_recieve)) {
@@ -28,12 +28,11 @@ const callBackController = async (req, res, next) => {
                     const bpp_providers = data.message.catalog['bpp/providers'];
                     let itemDetails = [];
 
-                    let toDisplayItems = false;
-                    if (!savedData.items) {
-                        toDisplayItems = true;
-                    }
-
                     const chat_id = savedData.chat_id;
+                    // if cache queue is empty use print the current items.
+                    const toDisplayItems = (await ioredis.llen("chat_id"+chat_id))==0;
+
+                    const transactionId=savedData.transaction_id;
                     bpp_providers.forEach((providerData) => {
                         const locationData = providerData['locations'];
                         const shopDetails = providerData['descriptor'];
@@ -84,7 +83,7 @@ const callBackController = async (req, res, next) => {
                     });
 
                     if (toDisplayItems) {
-                        retail.sendItemMessage(chat_id);
+                        retail.sendItemMessage(chat_id, transactionId);
                     }
 
                     console.log(await ioredis.llen("chat_id" + chat_id))

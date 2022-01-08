@@ -46,11 +46,8 @@ const webhookController = async (req, res, next) => {
         if (data.message != undefined) {
             if ((typeof (data.message.entities) != 'undefined') && (data.message.entities[0].type == 'bot_command')) {
                 redis.del(data.message.from.id)
-                try {
-                    console.log(await ioredis.del("chat_id"+data.message.from.id))
-                } catch (error) {
-                    console.log(error)    
-                }
+                await ioredis.del("chat_id"+data.message.from.id)
+                
                 switch (data.message.text) {
                     case '/retail':
                         redis.set(data.message.from.id, JSON.stringify({
@@ -98,36 +95,41 @@ const webhookController = async (req, res, next) => {
             // For Seperation We have Used
             const decryptedData = callbackUtils.decrypt(data.callback_query.data)
             const type = decryptedData.type;
+            const chat_id=data.callback_query.from.id;
             switch (type) {
                 case 'retail': {
                     const commandType = decryptedData.commandType
                     switch (commandType) {
                         case retail.callbackTypes.next:
-                            retail.nextRetailItems(data.callback_query.from.id)
+                            retail.nextItemsCallback(chat_id, decryptedData.id)
+                            break;
+                        
+                        case retail.callbackTypes.anotherSearch:
+                            retail.anotherSearchCallback(chat_id, decryptedData.id)
                             break;
 
                         case retail.callbackTypes.addToCart:
-                            retail.addToCartCallback(data.callback_query.from.id, decryptedData.id)
+                            retail.addToCartCallback(chat_id, decryptedData.id)
                             break;
 
                         case retail.callbackTypes.checkout:
-                            retail.checkoutCallback(data.callback_query.from.id, decryptedData.id)
+                            retail.checkoutCallback(chat_id, decryptedData.id)
                             break;
 
                         case retail.callbackTypes.cancelCheckout:
-                            retail.cancelCheckoutCallback(data.callback_query.from.id, decryptedData.id)
+                            retail.cancelCheckoutCallback(chat_id, decryptedData.id)
                             break;
 
                         case retail.callbackTypes.proceedCheckout:
-                            retail.proceedCheckoutCallback(data.callback_query.from.id, decryptedData.id);
+                            retail.proceedCheckoutCallback(chat_id, decryptedData.id);
                             break;
 
                         case retail.callbackTypes.confirmOrder:
-                            retail.confirmOrderCallback(data.callback_query.from.id, decryptedData.id);
+                            retail.confirmOrderCallback(chat_id, decryptedData.id);
                             break;
 
                         case retail.callbackTypes.cancelConfirm:
-                            retail.cancelConfirmCallback(data.callback_query.from.id, decryptedData.id);
+                            retail.cancelConfirmCallback(chat_id, decryptedData.id);
                             break;
                     }
 
