@@ -73,7 +73,7 @@ const handleRetail = async (cachedData, data) => {
                 // updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
                 // Temp Code 1
-                updateCachedData['location'] = "12.4535445,77.9283792";
+                updateCachedData['location'] = "12.9063433,77.5856825";
 
                 // // Temp Code 2
                 // updateCachedData['location'] = "28.528328,77.202714";
@@ -690,7 +690,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const displayItemCount = 5;
+const displayItemCount = 10;
 
 const anotherSearchCallback = async (chat_id, transactionId) => {
     try {

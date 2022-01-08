@@ -87,7 +87,7 @@ const callBackController = async (req, res, next) => {
                 }
             }
                 break
-            case 'on_select': { 
+            case 'on_select': {
                 console.log(data.context.bpp_id)
                 const currQouteData = data.message.order.quote;
                 await db.getDB().collection('ongoing').updateOne({
@@ -104,18 +104,18 @@ const callBackController = async (req, res, next) => {
                     isResolved: false
                 });
 
-                if(savedData==null){
+                if (savedData == null) {
                     break;
                 }
 
-                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
-                if(reqLength>savedData.onSelectCallbacks.length){
+                const reqLength = Object.keys(savedData.selecteditemsOnProviders).length;
+                if (reqLength > savedData.onSelectCallbacks.length) {
                     console.log("Waiting for more callbacks.")
                     break;
-                }   
+                }
 
                 // console.log(JSON.stringify(data))
-                
+
                 // This will only execute if we have enough callbacks on the db.
                 const chat_id = savedData.chat_id;
                 redis.get(chat_id, async (err, reply) => {
@@ -135,14 +135,14 @@ const callBackController = async (req, res, next) => {
                         }
 
                         let qouteText = "Your Order.\n";
-                        const allQoutes=savedData.qoutes;
-                        let totalCost=0;
+                        const allQoutes = savedData.qoutes;
+                        let totalCost = 0;
                         allQoutes.forEach((qoute) => {
                             qoute.breakup.forEach((itemData) => {
                                 qouteText += "\n*" + itemData.title + "*\n";
                                 qouteText += "Cost : *Rs. " + itemData.price.value + "*\n";
                             });
-                            totalCost+=parseFloat(qoute.price.value)
+                            totalCost += parseFloat(qoute.price.value)
                         });
                         qouteText += "\nTotal : *Rs. " + totalCost + "*\n";
                         qouteText += "\nPlease Enter billing details to proceed further.\n";
@@ -155,14 +155,14 @@ const callBackController = async (req, res, next) => {
 
                         // Changing the next step to billing_name.    
                         cachedData['nextStep'] = retail.steps.billing_name;
-                        redis.set(chat_id, JSON.stringify(cachedData));                        
+                        redis.set(chat_id, JSON.stringify(cachedData));
                     }
-                })    
+                })
             }
                 break;
             case 'on_init': {
-                const currOrder=data.message.order;
-                const providerUniqueId=retail.createProviderId({
+                const currOrder = data.message.order;
+                const providerUniqueId = retail.createProviderId({
                     bpp_id: data.context.bpp_id,
                     providerId: currOrder.provider.id
                 })
@@ -173,7 +173,7 @@ const callBackController = async (req, res, next) => {
                 }, {
                     $addToSet: {
                         onInitCallbacks: data,
-                        payments: {...currPaymentData, provider_unique_id: providerUniqueId},
+                        payments: { ...currPaymentData, provider_unique_id: providerUniqueId },
                         orders: currOrder
                     }
                 });
@@ -182,19 +182,19 @@ const callBackController = async (req, res, next) => {
                     transaction_id: data.context.transaction_id,
                     isResolved: false
                 });
-                
-                if(savedData==null){
+
+                if (savedData == null) {
                     break;
                 }
-                
-                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
-                if(reqLength>savedData.onInitCallbacks.length){
+
+                const reqLength = Object.keys(savedData.selecteditemsOnProviders).length;
+                if (reqLength > savedData.onInitCallbacks.length) {
                     console.log("Waiting for more callbacks.")
                     break;
-                }   
+                }
 
                 // TODO: check whether next step is wait for init callback or not.
-                
+
                 const chat_id = savedData.chat_id;
                 redis.get(chat_id, async (err, reply) => {
                     if (err) {
@@ -212,10 +212,10 @@ const callBackController = async (req, res, next) => {
 
                         let paymentText = "Please Confirm your order.\n";
                         paymentText += "\n*Costings*\n";
-    
+
                         let currItemIdx = 1;
-                        const allOrders=savedData.orders;
-                        let totalCost=0;
+                        const allOrders = savedData.orders;
+                        let totalCost = 0;
                         allOrders.forEach((orderInfo) => {
                             orderInfo.quote.breakup.forEach((breakupItem) => {
                                 paymentText += "\n*" + currItemIdx + "*";
@@ -224,8 +224,8 @@ const callBackController = async (req, res, next) => {
                                 currItemIdx++;
                             });
 
-                            const paymentData=orderInfo.payment;
-                            totalCost+=parseFloat(paymentData.params.amount);
+                            const paymentData = orderInfo.payment;
+                            totalCost += parseFloat(paymentData.params.amount);
                         });
 
 
@@ -279,10 +279,12 @@ const callBackController = async (req, res, next) => {
                     }
                 });
 
+                const messageId = data.context.message_id;
                 // Save this confirm orders in the other db called confirm_orders.
-                await db.getDB().collection('confirmed_orders').insertOne({
+                const confOrdInfo = await db.getDB().collection('confirmed_orders').insertOne({
                     ...data,
-                    order_id:data.message.order.id
+                    order_id: data.message.order.id,
+                    message_id: messageId
                 })
 
                 // Send message with data, track and status
@@ -338,7 +340,7 @@ const callBackController = async (req, res, next) => {
 
                         orderText += "\nTotal Amount: *Rs. " + orderInfo.quote.price.value + "*\n";
                         orderText += "\nThanks for shopping with us.\n"
-                        
+
                         const reply_markup = {
                             inline_keyboard: [
                                 [
@@ -347,7 +349,7 @@ const callBackController = async (req, res, next) => {
                                         callback_data: callbackUtils.encrypt({
                                             type: 'retail',
                                             commandType: retail.callbackTypes.trackOrder,
-                                            id: orderId
+                                            id: messageId
                                         })
                                     },
                                     {
@@ -355,7 +357,7 @@ const callBackController = async (req, res, next) => {
                                         callback_data: callbackUtils.encrypt({
                                             type: 'retail',
                                             commandType: retail.callbackTypes.orderStatus,
-                                            id: orderId
+                                            id: messageId
                                         })
                                     }
                                 ]
@@ -369,16 +371,16 @@ const callBackController = async (req, res, next) => {
                             text: orderText,
                             reply_markup: JSON.stringify(reply_markup)
                         });
-                        
+
                     }
                 })
-                
+
                 // We remove this flow data completely from ongoing when onConfirmCallback is enough.
-                const reqLength=Object.keys(savedData.selecteditemsOnProviders).length;
-                if(reqLength>savedData.onConfirmCallbacks.length){
+                const reqLength = Object.keys(savedData.selecteditemsOnProviders).length;
+                if (reqLength > savedData.onConfirmCallbacks.length) {
                     console.log("Waiting for more callbacks.")
                     break;
-                }   
+                }
 
                 await db.getDB().collection('ongoing').deleteOne({
                     _id: savedData._id
@@ -388,21 +390,21 @@ const callBackController = async (req, res, next) => {
                 await db.getDB().collection('completed').insertOne({
                     ...savedData
                 })
-                
+
                 break
             case 'on_track':
                 try {
                     const savedData = await db.getDB().collection('completed').findOne({
                         transaction_id: data.context.transaction_id,
                     });
-    
-                    const orderId=savedData.order.id;
-                    let trackText="*Order Tracking*\n";
-                    trackText+="\nOrder ID: *"+orderId+"*\n";
-                    trackText+="\nUse this link to track your order.\n";
-                    trackText+=data.message.tracking.url+"\n";
-                    trackText+="\nStatus: *"+data.message.tracking.status+"*"
-    
+
+                    const orderId = savedData.order.id;
+                    let trackText = "*Order Tracking*\n";
+                    trackText += "\nOrder ID: *" + orderId + "*\n";
+                    trackText += "\nUse this link to track your order.\n";
+                    trackText += data.message.tracking.url + "\n";
+                    trackText += "\nStatus: *" + data.message.tracking.status + "*"
+
                     replySender({
                         chat_id: savedData.chat_id,
                         text: trackText
@@ -418,30 +420,30 @@ const callBackController = async (req, res, next) => {
                         transaction_id: data.context.transaction_id,
                     });
 
-                    const orderId=savedData.order.id;
-                    const orderState=data.message.order.state;
-                    const paymentInfo=data.message.order.payment;
-                    
-                    let statusText="*Order Status*\n";
-                    statusText+="\nOrder ID: *"+orderId+"*\n";
-                    statusText+="\nStatus: *"+orderState+"*\n";
+                    const orderId = savedData.order.id;
+                    const orderState = data.message.order.state;
+                    const paymentInfo = data.message.order.payment;
+
+                    let statusText = "*Order Status*\n";
+                    statusText += "\nOrder ID: *" + orderId + "*\n";
+                    statusText += "\nStatus: *" + orderState + "*\n";
 
                     try {
-                        const fulfillmentState=data.message.order.fulfillment.state;
-                        if(fulfillmentState){
-                            statusText+="\n*Fulfillment Info*\n";
-                            statusText+="Name: *"+fulfillmentState.descriptor.name+"*\n";
-                            statusText+="Code: *"+fulfillmentState.descriptor.code+"*\n";
+                        const fulfillmentState = data.message.order.fulfillment.state;
+                        if (fulfillmentState) {
+                            statusText += "\n*Fulfillment Info*\n";
+                            statusText += "Name: *" + fulfillmentState.descriptor.name + "*\n";
+                            statusText += "Code: *" + fulfillmentState.descriptor.code + "*\n";
                         }
                     } catch (error) {
                         console.log(error)
                     }
 
-                    statusText+="\n*Payment*\n";
-                    statusText+="Amount: *Rs. "+paymentInfo.params.amount+"*\n";
-                    statusText+="Status: *"+paymentInfo.status+"*";
+                    statusText += "\n*Payment*\n";
+                    statusText += "Amount: *Rs. " + paymentInfo.params.amount + "*\n";
+                    statusText += "Status: *" + paymentInfo.status + "*";
 
-                    
+
                     replySender({
                         chat_id: savedData.chat_id,
                         text: statusText
