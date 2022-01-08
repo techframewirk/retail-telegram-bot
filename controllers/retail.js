@@ -68,12 +68,12 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemName;
-                // // TODO: TEMP Make it ORG in prod.
-                // // ORG Code.
-                // updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
+                // TODO: TEMP Make it ORG in prod.
+                // ORG Code.
+                updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
-                // Temp Code 1
-                updateCachedData['location'] = "12.9063433,77.5856825";
+                // // Temp Code 1
+                // updateCachedData['location'] = "12.9063433,77.5856825";
 
                 // // Temp Code 2
                 // updateCachedData['location'] = "28.528328,77.202714";
