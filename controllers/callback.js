@@ -78,7 +78,9 @@ const callBackController = async (req, res, next) => {
                     });
 
                     if (toDisplayItems) {
-                        retail.sendItemMessage(chat_id, transactionId);
+                        // TODO: pass the language.
+                        const cachedData=JSON.parse(await ioredis.get(chat_id));
+                        retail.sendItemMessage(chat_id, transactionId, cachedData.language);
                     }
 
                     console.log(await ioredis.llen("chat_id" + chat_id))
@@ -243,7 +245,7 @@ const callBackController = async (req, res, next) => {
                             inline_keyboard: [
                                 [
                                     {
-                                        text: "Cancel",
+                                        text: retail.btnTxts(cachedData.language).cancel,
                                         callback_data: callbackUtils.encrypt({
                                             type: 'retail',
                                             commandType: retail.callbackTypes.cancelConfirm,
@@ -251,7 +253,7 @@ const callBackController = async (req, res, next) => {
                                         })
                                     },
                                     {
-                                        text: "Confirm",
+                                        text: retail.btnTxts(cachedData.language).confirm,
                                         callback_data: callbackUtils.encrypt({
                                             type: 'retail',
                                             commandType: retail.callbackTypes.confirmOrder,
@@ -363,7 +365,7 @@ const callBackController = async (req, res, next) => {
                                 inline_keyboard: [
                                     [
                                         {
-                                            text: "Track Order",
+                                            text: retail.btnTxts(cachedData.language).trackOrder,
                                             callback_data: callbackUtils.encrypt({
                                                 type: 'retail',
                                                 commandType: retail.callbackTypes.trackOrder,
@@ -371,7 +373,7 @@ const callBackController = async (req, res, next) => {
                                             })
                                         },
                                         {
-                                            text: "Order Status",
+                                            text: retail.btnTxts(cachedData.language).ordeStatus,
                                             callback_data: callbackUtils.encrypt({
                                                 type: 'retail',
                                                 commandType: retail.callbackTypes.orderStatus,

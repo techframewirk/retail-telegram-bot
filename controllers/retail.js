@@ -14,6 +14,9 @@ const englishStepsMsgs = require('../msgsJSONs/english_steps_msgs.json')
 const kannadaOtherMsgs = require('../msgsJSONs/kannada_other_msgs.json')
 const kannadaStepsMsgs = require('../msgsJSONs/kannada_steps_msgs.json')
 
+const englishBtnTxts = require('../msgsJSONs/english_btns_txts.json')
+const kannadaBtnTxts = require('../msgsJSONs/kannada_btns_txts.json')
+
 const handleRetail = async (cachedData, data) => {
     if (isStepAnItemCount(cachedData.nextStep)) {
         // This will handle all item selection count.
@@ -51,7 +54,7 @@ const handleRetail = async (cachedData, data) => {
             inline_keyboard: [
                 [
                     {
-                        text: "Checkout",
+                        text: btnTxts(cachedData.language).checkout,
                         callback_data: callbackUtils.encrypt({
                             type: 'retail',
                             commandType: retailCallBackTypes.checkout,
@@ -680,49 +683,54 @@ const handleRetail = async (cachedData, data) => {
 
 const nextItemsCallback = async (chat_id, transactionId) => {
     try {
-        if (await ioredis.llen("chat_id" + chat_id) > 0) {
-            await sendItemMessage(chat_id, transactionId)
-        }
-        else {
-            // TODO: get cache data.
-            redis.get(chat_id, async (err, reply) => {
-                if (err) {
-                    replySender({
-                        chat_id: chat_id,
-                        text: retailMsgs(retailLanguages.english).something_went_wrong
-                    });
-                    console.log(err)
-                } else {
-                    const cachedData=JSON.parse(reply)
-                    replySender({
-                        chat_id: chat_id,
-                        text: retailMsgs(cachedData.language)(cachedData.language).no_matching_items_available,
-                        reply_markup: JSON.stringify({
-                            inline_keyboard: [
-                                [
-                                    {
-                                        text: "Search",
-                                        callback_data: callbackUtils.encrypt({
-                                            type: 'retail',
-                                            commandType: retailCallBackTypes.anotherSearch,
-                                            id: transactionId
-                                        })
-                                    }
-                                ]
-                            ],
-                            "resize_keyboard": true,
-                            "one_time_keyboard": true
-                        })
-                    });
+        // TODO: get cache data.
+        redis.get(chat_id, async (err, reply) => {
+            if (err) {
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs(retailLanguages.english).something_went_wrong
+                });
+                console.log(err)
+            } else {
+                if (await ioredis.llen("chat_id" + chat_id) > 0) {
+                    await sendItemMessage(chat_id, transactionId)
                 }
-            });
-        }
+                else{
+                    const cachedData=JSON.parse(reply)
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs(cachedData.language)(cachedData.language).no_matching_items_available,
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: btnTxts(cachedData.language).search,
+                                    callback_data: callbackUtils.encrypt({
+                                        type: 'retail',
+                                        commandType: retailCallBackTypes.anotherSearch,
+                                        id: transactionId
+                                    })
+                                }
+                            ]
+                        ],
+                        "resize_keyboard": true,
+                        "one_time_keyboard": true
+                    })
+                });
+                }
+                
+            }
+        });
     } catch (error) {
         console.log(error)
+        replySender({
+            chat_id: chat_id,
+            text: retailMsgs(retailLanguages.english).something_went_wrong
+        });
     }
 }
 
-const sendItemMessage = async (chat_id, transactionId) => {
+const sendItemMessage = async (chat_id, transactionId, language) => {
     console.log(transactionId)
     // console.log(await ioredis.llen("chat_id" + chat_id));
 
@@ -739,7 +747,7 @@ const sendItemMessage = async (chat_id, transactionId) => {
             inline_keyboard: [
                 [
                     {
-                        text: "Add to cart",
+                        text: btnTxts(language).addToCart,
                         callback_data: callbackUtils.encrypt({
                             type: 'retail',
                             commandType: retailCallBackTypes.addToCart,
@@ -779,7 +787,7 @@ const sendItemMessage = async (chat_id, transactionId) => {
         inline_keyboard: [
             [
                 {
-                    text: "Search",
+                    text: btnTxts(language).search,
                     callback_data: callbackUtils.encrypt({
                         type: 'retail',
                         commandType: retailCallBackTypes.anotherSearch,
@@ -793,7 +801,7 @@ const sendItemMessage = async (chat_id, transactionId) => {
     };
     if (await ioredis.llen("chat_id" + chat_id) > 0) {
         reply_markup.inline_keyboard[0].push({
-            text: "Next",
+            text: btnTxts(language).next,
             callback_data: callbackUtils.encrypt({
                 type: 'retail',
                 commandType: retailCallBackTypes.next,
@@ -955,7 +963,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
                     inline_keyboard: [
                         [
                             {
-                                text: "Cancel",
+                                text: btnTxts(cachedData.language).cancel,
                                 callback_data: callbackUtils.encrypt({
                                     type: 'retail',
                                     commandType: retailCallBackTypes.cancelCheckout,
@@ -963,7 +971,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
                                 })
                             },
                             {
-                                text: "Proceed",
+                                text: btnTxts(cachedData.language).proceed,
                                 callback_data: callbackUtils.encrypt({
                                     type: 'retail',
                                     commandType: retailCallBackTypes.proceedCheckout,
@@ -1710,45 +1718,6 @@ const retailCallBackTypes = {
     orderStatus: "OrderStatus"
 }
 
-// These are the text messages for each step.
-// Like when asking for location use location msg.
-// const retailMsgs = {
-//     location: "Hi! Where do you want to get your items delivered to today?",
-//     itemName: "Thanks! What would you like to buy?",
-//     itemSelect: "Here’s what I found near you: ",
-//     itemCountStep: "Please enter the quantity.",
-//     proceedCheckout: "Please hang on while we preceeding with your order.",
-
-//     billing_name: "Please Enter your billing name.",
-//     billing_phone: "Please Enter your billing contact number.",
-
-//     billing_address_flat_no: "Please enter your  Flat number.",
-//     billing_address_building: "Please enter your Building Name.",
-//     billing_address_street: "Please enter your Street Name.",
-//     billing_address_city: "Please enter your City.",
-//     billing_address_state: "Please enter your State.",
-//     billing_address_country: "Please enter your Country.",
-//     billing_address_area_code: "Please enter your Area Code or Pin Code.",
-
-//     billing_email: "Please enter your billing email.",
-
-//     shipping_same_as_billing_info: "Is Your billing details same as shipping details.\nEnter *y* for yes.\nEnter *n* for no.",
-
-//     shipping_email: "Please enter your shipping email.",
-//     shipping_phone: "Please Enter your shipping contact number.",
-
-//     shipping_address_flat_no: "Please enter your Flat number.",
-//     shipping_address_building: "Please enter your Building Name.",
-//     shipping_address_street: "Please enter your Street Name.",
-//     shipping_address_city: "Please enter your City.",
-//     shipping_address_state: "Please enter your State.",
-//     shipping_address_country: "Please enter your Country.",
-//     shipping_address_area_code: "Please enter your Area Code or Pin Code.",
-
-//     waitForInitCallback: "We have initiated the your order.\nPlease wait for a moment.",
-//     waitForConfirmCallback: "We are creating your order.\nPlease wait for a moment."
-// }
-
 const retailMsgs = (language) => {
     if (language == retailLanguages.kannada) {
         return { ...kannadaOtherMsgs, ...kannadaStepsMsgs }
@@ -1758,6 +1727,15 @@ const retailMsgs = (language) => {
     }
 };
 
+const btnTxts=(language)=>{
+    if(language==retailLanguages.kannada){
+        return kannadaBtnTxts;
+    }
+    else{
+        return englishBtnTxts;
+    }
+}
+
 const retailLanguages = {
     "english": "english",
     "kannada": "kannada"
@@ -1765,10 +1743,13 @@ const retailLanguages = {
 
 module.exports = {
     handleRetail,
+    callbackTypes: retailCallBackTypes,
     steps: retailSteps,
+    
     msgs: retailMsgs,
     languages: retailLanguages,
-    callbackTypes: retailCallBackTypes,
+    btnTxts,
+    
     getRetailItemText,
     getSelectItemDetails,
     seperateItemsOnProvider,

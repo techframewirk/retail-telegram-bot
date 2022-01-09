@@ -1,16 +1,18 @@
 {
-    "something_went_wrong": "Something went Wrong !",
-    "items_added_to_cart": "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
+    "something_went_wrong": "Something went wrong!",
+    "items_added_to_cart": "Items added to the cart.\n If you would like to place the order, Click proceed. If not, Click Go Back", 
+    
     "invalid_location": "That does not seem like a location! Please try again!",
     "invalid_item_name":"This does not look like an item name.",
-    "invalid_number":"This does not look like a number.\nPlease enter a valid number.",
     "invalid_name":"That does not seem like a name.\nPlease try again!",
+    "invalid_number":"This does not look like a number.\nPlease enter a valid number.",
     "invalid_contact_number":"It doesn't look like your contact. \nTry once again!",
-    "invalid_email":"This dows bit look like an email.\n Please try again!",
+    "invalid_email":"This does not look like an email.\n Please try again!",
     "invalid_choice":"Invalid choice.\nPlease select from the above given choices.",
+    "invalid_call":"Invalid Call.",
+    
     "no_matching_items_available":"Currently No more matching items available.\nYou can search for another item.",
     "to_view_more_items":"To view More Items.\nClick on Next or search for another item.",
-    "invalid_call":"Invalid Call.",
     "still_can_add_items":"You can still add more items to your cart.",
     "cancel_confirm":"Your items are still saved in the cart.\nYou can add more items and place an order.",
     "did_nt_understand":"I didn't understand that. Please try again!"
