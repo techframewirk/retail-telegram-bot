@@ -164,7 +164,7 @@ const callBackController = async (req, res, next) => {
                 break;
             case 'on_init': {
                 console.log(data.context.bpp_id)
-                console.log(JSON.stringify(data))
+                // console.log(JSON.stringify(data))
                 const currOrder = data.message.order;
                 const providerUniqueId = retail.createProviderId({
                     bpp_id: data.context.bpp_id,
@@ -438,7 +438,7 @@ const callBackController = async (req, res, next) => {
             case 'on_status':
                 try {
                     const orderId = data.message.order.id;
-                    console.log(JSON.stringify(data))
+                    // console.log(JSON.stringify(data))
                     const savedData = await db.getDB().collection('confirmed_orders').findOne({
                         order_id: orderId,
                     });
