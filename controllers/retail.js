@@ -74,7 +74,7 @@ const handleRetail = async (cachedData, data) => {
             if (data.message.location) {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemName;
-                TODO: TEMP Make it ORG in prod.
+                // TODO: TEMP Make it ORG in prod.
                 // ORG Code.
                 updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
