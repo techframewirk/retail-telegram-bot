@@ -53,14 +53,14 @@ const webhookController = async (req, res, next) => {
                         redis.set(data.message.from.id, JSON.stringify({
                             chat_id: data.message.chat.id,
                             initiatedCommand: '/retail',
-                            nextStep: retail.steps.location
+                            nextStep: retail.steps.language
                         }), (err, reply) => {
                             if (err) {
                                 throw err
                             } else {
                                 replySender({
                                     "chat_id": data.message.chat.id,
-                                    "text": retail.msgs.location
+                                    "text": retail.msgs.language
                                 });
                             }
                         })

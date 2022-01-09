@@ -1,10 +1,10 @@
 {
+    "language": "Please choose your preferred language.\n1. English\n2. ಕನ್ನಡ",
     "location": "Hi! Where do you want to get your items delivered to today?",
     "itemName": "Thanks! What would you like to buy?",
     "itemSelect": "Here’s what I found near you: ",
     "itemCountStep": "Please enter the quantity.",
     "proceedCheckout": "Please hang on while we preceeding with your order.",
-    
     "billing_name": "Please Enter your billing name.",
     "billing_phone": "Please Enter your billing contact number.",
     "billing_address_flat_no": "Please enter your  Flat number.",
@@ -15,9 +15,7 @@
     "billing_address_country": "Please enter your Country.",
     "billing_address_area_code": "Please enter your Area Code or Pin Code.",
     "billing_email": "Please enter your billing email.",
-    
     "shipping_same_as_billing_info": "Is Your billing details same as shipping details.\nEnter *y* for yes.\nEnter *n* for no.",
-    
     "shipping_email": "Please enter your shipping email.",
     "shipping_phone": "Please Enter your shipping contact number.",
     "shipping_address_flat_no": "Please enter your Flat number.",
@@ -27,7 +25,6 @@
     "shipping_address_state": "Please enter your State.",
     "shipping_address_country": "Please enter your Country.",
     "shipping_address_area_code": "Please enter your Area Code or Pin Code.",
-    
     "waitForInitCallback": "We have initiated the your order.\nPlease wait for a moment.",
     "waitForConfirmCallback": "We are creating your order.\nPlease wait for a moment."
 }

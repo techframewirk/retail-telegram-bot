@@ -70,6 +70,42 @@ const handleRetail = async (cachedData, data) => {
     }
 
     switch (cachedData.nextStep) {
+        case retailSteps.language:{
+            const chat_id=data.message.chat.id;
+            if(validationUtils.integer(data.message.text)){
+                let languageNumber=parseInt(data.message.text);
+                if((languageNumber==1)||(languageNumber==2)){
+                    if(languageNumber==1){
+                        cachedData['language']=retailLanguages.english;
+                    }
+                    else if(languageNumber==2){
+                        cachedData['language']=retailLanguages.kannada;
+                    }
+
+                    cachedData['nextStep'] = retailSteps.location;
+                    redis.set(data.message.chat.id, JSON.stringify(cachedData));
+                    replySender({
+                        chat_id: data.message.chat.id,
+                        text: retailMsgs.location
+                    });
+
+                    console.log(cachedData)
+                }
+                else{
+                    replySender({
+                        chat_id:chat_id,
+                        text: retailMsgs.invalid_choice
+                    });
+                }
+            }
+            else{
+                replySender({
+                    chat_id:chat_id,
+                    text: retailMsgs.invalid_number
+                });
+            }
+        }
+        break;
         case retailSteps.location:
             if (data.message.location) {
                 let updateCachedData = cachedData;
@@ -750,7 +786,7 @@ const sendItemMessage = async (chat_id, transactionId) => {
     //     reply_markup: JSON.stringify(reply_markup)
     // });
 
-    await sleep(250*displayItemCount)
+    await sleep(250 * displayItemCount)
     replySender({
         chat_id: chat_id,
         text: retailMsgs.to_view_more_items,
@@ -1582,6 +1618,7 @@ const seperateItemsOnProvider = (selectedItemDetails) => {
 }
 
 const retailSteps = {
+    language: "language",
     location: "location",
     itemName: "itemName",
     itemSelect: "itemSelect",
@@ -1682,10 +1719,16 @@ const retailCallBackTypes = {
 
 const retailMsgs = { ...englishOtherMsgs, ...englishStepsMsgs };
 
+const retailLanguages={
+    "english":"english",
+    "kannada":"kannada"
+}
+
 module.exports = {
     handleRetail,
     steps: retailSteps,
     msgs: retailMsgs,
+    languages:retailLanguages,
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
     getSelectItemDetails,
