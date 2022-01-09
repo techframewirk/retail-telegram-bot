@@ -122,7 +122,7 @@ const callBackController = async (req, res, next) => {
                     if (err) {
                         replySender({
                             chat_id: chat_id,
-                            text: "Something went Wrong"
+                            text: retail.msgs.something_went_wrong
                         });
                         console.log(err)
                     }
@@ -195,20 +195,25 @@ const callBackController = async (req, res, next) => {
                     break;
                 }
 
-                // TODO: check whether next step is wait for init callback or not.
 
                 const chat_id = savedData.chat_id;
                 redis.get(chat_id, async (err, reply) => {
                     if (err) {
                         replySender({
                             chat_id: chat_id,
-                            text: "Something went Wrong"
+                            text: retail.msgs.something_went_wrong
                         });
                         console.log(err)
                     }
                     else {
                         const cachedData = JSON.parse(reply)
                         if (!cachedData) {
+                            return;
+                        }
+
+                        
+                        // We are returning now because here the next step should be to wait for init callback.
+                        if(cachedData.nextStep!=retail.steps.waitForInitCallback){
                             return;
                         }
 
@@ -315,12 +320,11 @@ const callBackController = async (req, res, next) => {
                         break;
                     }
 
-                    // TODO: check whether next step is wait for confirm callback or not.
                     redis.get(chat_id, async (err, reply) => {
                         if (err) {
                             replySender({
                                 chat_id: chat_id,
-                                text: "Something went Wrong"
+                                text: retail.msgs.something_went_wrong
                             });
                             console.log(err)
                         }
@@ -329,6 +333,12 @@ const callBackController = async (req, res, next) => {
                             if (!cachedData) {
                                 return;
                             }
+
+                            // // TODO: Test in production.
+                            // // We are returning from here because the next step is not wait for confirm callback.
+                            // if(cachedData.nextStep!=retail.steps.waitForConfirmCallback){
+                            //     return;
+                            // }
 
                             const orderId = data.message.order.id;
                             const orderState = data.message.order.state;

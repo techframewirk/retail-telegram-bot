@@ -27,7 +27,6 @@
     "shipping_address_state": "Please enter your State.",
     "shipping_address_country": "Please enter your Country.",
     "shipping_address_area_code": "Please enter your Area Code or Pin Code.",
-    "shipping_location": "Please share your shipping location.",
     
     "waitForInitCallback": "We have initiated the your order.\nPlease wait for a moment.",
     "waitForConfirmCallback": "We are creating your order.\nPlease wait for a moment."

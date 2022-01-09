@@ -85,7 +85,7 @@ const webhookController = async (req, res, next) => {
                         } else {
                             replySender({
                                 "chat_id": data.message.chat.id,
-                                text: "I didn't understand that. Please try again!"
+                                text: retail.msgs.did_nt_understand
                             })
                         }
                     }

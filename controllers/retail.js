@@ -6,59 +6,65 @@ const replySender = require('./replySender');
 const replySenderWithImage = require('./replySenderWithImage')
 const { ObjectId } = require('mongodb')
 const callbackUtils = require('../utils/callback')
+const validationUtils = require('../utils/validations')
+const englishOtherMsgs = require('../msgsJSONs/english_other_msgs.json')
+const englishStepsMsgs = require('../msgsJSONs/english_steps_msgs.json')
 
 const handleRetail = async (cachedData, data) => {
     if (isStepAnItemCount(cachedData.nextStep)) {
         // This will handle all item selection count.
-        // TODO: apply validation on integer.
 
-        // TODO: apply validation on providerId,
-        // all items should be from same provider.
-        const count = parseInt(data.message.text);
-        if (data.message.text) {
-            const chat_id = data.message.chat.id;
-            const parts = cachedData.nextStep.split('&&');
-            let itemUniqueId = "";
-            for (let i = 1; i < parts.length; i++) {
-                itemUniqueId += parts[i];
-            }
-
-            cachedData['nextStep'] = retailSteps.itemSelect;
-            let selectedItems = []
-            if (cachedData['selectedItems']) {
-                selectedItems = [...cachedData['selectedItems']];
-            }
-
-            selectedItems.push({
-                item_unique_id: itemUniqueId,
-                count: count
-            });
-            cachedData['selectedItems'] = selectedItems;
-            console.log(cachedData)
-
-            const reply_markup = JSON.stringify({
-                inline_keyboard: [
-                    [
-                        {
-                            text: "Checkout",
-                            callback_data: callbackUtils.encrypt({
-                                type: 'retail',
-                                commandType: retailCallBackTypes.checkout,
-                                id: cachedData.transaction_id
-                            })
-                        }
-                    ]
-                ],
-                "resize_keyboard": true,
-                "one_time_keyboard": true
-            })
-            redis.set(chat_id, JSON.stringify(cachedData));
+        const chat_id = data.message.chat.id;
+        if (!validationUtils.integer(data.message.text)) {
             replySender({
                 chat_id: chat_id,
-                text: "Items Added to the Cart.\nFurther select more items.\nClick on checkout to proceed.",
-                reply_markup: reply_markup
+                text: retailMsgs.invalid_number,
             })
+            return
         }
+
+        const count = parseInt(data.message.text);
+        const parts = cachedData.nextStep.split('&&');
+        let itemUniqueId = "";
+        for (let i = 1; i < parts.length; i++) {
+            itemUniqueId += parts[i];
+        }
+
+        cachedData['nextStep'] = retailSteps.itemSelect;
+        let selectedItems = []
+        if (cachedData['selectedItems']) {
+            selectedItems = [...cachedData['selectedItems']];
+        }
+
+        selectedItems.push({
+            item_unique_id: itemUniqueId,
+            count: count
+        });
+        cachedData['selectedItems'] = selectedItems;
+        console.log(cachedData)
+
+        const reply_markup = JSON.stringify({
+            inline_keyboard: [
+                [
+                    {
+                        text: "Checkout",
+                        callback_data: callbackUtils.encrypt({
+                            type: 'retail',
+                            commandType: retailCallBackTypes.checkout,
+                            id: cachedData.transaction_id
+                        })
+                    }
+                ]
+            ],
+            "resize_keyboard": true,
+            "one_time_keyboard": true
+        })
+        redis.set(chat_id, JSON.stringify(cachedData));
+        replySender({
+            chat_id: chat_id,
+            text: retailMsgs.items_added_to_cart,
+            reply_markup: reply_markup
+        })
 
         return;
     }
@@ -69,11 +75,11 @@ const handleRetail = async (cachedData, data) => {
                 let updateCachedData = cachedData;
                 updateCachedData['nextStep'] = retailSteps.itemName;
                 // TODO: TEMP Make it ORG in prod.
-                // ORG Code.
-                updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
+                // // ORG Code.
+                // updateCachedData['location'] = `${data.message.location.latitude},${data.message.location.longitude}`;
 
-                // // Temp Code 1
-                // updateCachedData['location'] = "12.9063433,77.5856825";
+                // Temp Code 1
+                updateCachedData['location'] = "12.9063433,77.5856825";
 
                 // // Temp Code 2
                 // updateCachedData['location'] = "28.528328,77.202714";
@@ -88,7 +94,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "That does not seem like a location! Please try again!"
+                    text: retailMsgs.invalid_location
                 });
             }
             break;
@@ -120,33 +126,70 @@ const handleRetail = async (cachedData, data) => {
                 else {
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: "Something went wrong."
+                        text: retailMsgs.something_went_wrong
                     });
                 }
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "This does not look like an item name."
+                    text: retailMsgs.invalid_item_name
                 });
             }
             break;
         case retailSteps.itemSelect: {
-            // TODO: add some text msg.
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
         }
             break;
         case retailSteps.proceedCheckout: {
-            // TODO: add some text msg.
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
         }
             break;
         case retailSteps.waitForQouteCallback: {
-            // TODO: add some text msg.
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
         }
             break;
 
+        case retailSteps.waitForInitCallback: {
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
+        }
+            break;
+
+        case retailSteps.stateOrderConfirmation: {
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
+        }
+            break;
+
+        case retailSteps.waitForConfirmCallback: {
+            const chat_id = data.message.chat.id;
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs.invalid_call
+            })
+        }
+            break;
         case retailSteps.billing_name:
-            if (data.message.text) {
-                // TODO: apply validation.
+            if (validationUtils.name(data.message.text)) {
                 const billingInfo = {};
                 billingInfo['name'] = data.message.text;
 
@@ -171,7 +214,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "That does not seem like a billing name! Please try again!"
+                    text: retailMsgs.invalid_name
                 });
             }
             break;
@@ -192,7 +235,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "It doesn't look like your contact. \nTry once again.",
+                    text: retailMsgs.invalid_contact_number,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -211,7 +254,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.billing_address_flat_no:
             if (data.message.text) {
-                // TODO: apply validation.
                 const billingInfo = cachedData['billing'];
                 billingInfo['address'] = {
                     "door": data.message.text,
@@ -230,7 +272,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.billing_address_building:
             if (data.message.text) {
-                // TODO: apply validation.
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['building'] = data.message.text;
 
@@ -246,7 +287,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.billing_address_street:
             if (data.message.text) {
-                // TODO: apply validation.
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['street'] = data.message.text;
 
@@ -262,7 +302,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.billing_address_city:
             if (data.message.text) {
-                // TODO: apply validation.
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['city'] = data.message.text;
 
@@ -278,7 +317,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.billing_address_state:
             if (data.message.text) {
-                // TODO: apply validation.
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['state'] = data.message.text;
 
@@ -293,8 +331,7 @@ const handleRetail = async (cachedData, data) => {
             break;
 
         case retailSteps.billing_address_area_code:
-            if (data.message.text) {
-                // TODO: apply validation.
+            if (validationUtils.name(data.message.text)) {
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['area_code'] = data.message.text;
 
@@ -308,9 +345,17 @@ const handleRetail = async (cachedData, data) => {
             }
             break;
 
-        case retailSteps.billing_email:
-            if (data.message.text) {
-                // TODO: apply validation.
+        case retailSteps.billing_email: {
+            let isEmailThere = false;
+            if (typeof (data.message.entities) != 'undefined') {
+                data.message.entities.forEach(entity => {
+                    if (entity.type == 'email') {
+                        isEmailThere = true;
+                    }
+                });
+            }
+
+            if (isEmailThere) {
                 const billingInfo = cachedData['billing'];
                 billingInfo['email'] = data.message.text;
 
@@ -322,6 +367,13 @@ const handleRetail = async (cachedData, data) => {
                     text: retailMsgs.shipping_same_as_billing_info,
                 });
             }
+            else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: retailMsgs.invalid_email
+                })
+            }
+        }
             break;
 
         case retailSteps.shipping_same_as_billing_info:
@@ -388,15 +440,28 @@ const handleRetail = async (cachedData, data) => {
                 else {
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: "Invalid Choice",
+                        text: retailMsgs.invalid_choice,
                     })
                 }
             }
+            else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: retailMsgs.invalid_choice,
+                })
+            }
             break;
 
-        case retailSteps.shipping_email:
-            if (data.message.text) {
-                // TODO: apply validation.
+        case retailSteps.shipping_email: {
+            let isEmailThere = false;
+            if (typeof (data.message.entities) != 'undefined') {
+                data.message.entities.forEach(entity => {
+                    if (entity.type == 'email') {
+                        isEmailThere = true;
+                    }
+                });
+            }
+            if (isEmailThere) {
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']['contact']['email'] = data.message.text;
 
@@ -418,6 +483,13 @@ const handleRetail = async (cachedData, data) => {
                     }
                 });
             }
+            else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: retailMsgs.invalid_email
+                });
+            }
+        }
             break;
 
         case retailSteps.shipping_phone:
@@ -437,7 +509,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: "It doesn't look like your contact. \nTry once again.",
+                    text: retailMsgs.invalid_contact_number,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -454,7 +526,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.shipping_address_flat_no:
             if (data.message.text) {
-                // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['door'] = data.message.text;
 
@@ -470,7 +541,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.shipping_address_building:
             if (data.message.text) {
-                // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['building'] = data.message.text;
 
@@ -486,7 +556,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.shipping_address_street:
             if (data.message.text) {
-                // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['street'] = data.message.text;
 
@@ -502,7 +571,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.shipping_address_city:
             if (data.message.text) {
-                // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['city'] = data.message.text;
 
@@ -518,7 +586,6 @@ const handleRetail = async (cachedData, data) => {
 
         case retailSteps.shipping_address_state:
             if (data.message.text) {
-                // TODO: apply validation.
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['state'] = data.message.text;
 
@@ -533,8 +600,7 @@ const handleRetail = async (cachedData, data) => {
             break;
 
         case retailSteps.shipping_address_area_code:
-            if (data.message.text) {
-                // TODO: apply validation.
+            if (validationUtils.integer(data.message.text)) {
                 const fulfillmentInfo = cachedData['fulfillment'];
                 fulfillmentInfo['end']["location"]['address']['area_code'] = data.message.text;
 
@@ -556,6 +622,12 @@ const handleRetail = async (cachedData, data) => {
                     text: retailMsgs.waitForInitCallback,
                 });
             }
+            else {
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: retailMsgs.invalid_number,
+                });
+            }
             break;
     }
 }
@@ -568,7 +640,7 @@ const nextItemsCallback = async (chat_id, transactionId) => {
         else {
             replySender({
                 chat_id: chat_id,
-                text: "Currently No more matching items available.\nYou can search for another item.",
+                text: retailMsgs.no_matching_items_available,
                 reply_markup: JSON.stringify({
                     inline_keyboard: [
                         [
@@ -678,10 +750,10 @@ const sendItemMessage = async (chat_id, transactionId) => {
     //     reply_markup: JSON.stringify(reply_markup)
     // });
 
-    await sleep(1000)
+    await sleep(250*displayItemCount)
     replySender({
         chat_id: chat_id,
-        text: "To view More Items",
+        text: retailMsgs.to_view_more_items,
         reply_markup: JSON.stringify(reply_markup)
     });
 }
@@ -698,15 +770,22 @@ const anotherSearchCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went Wrong"
+                    text: retailMsgs.something_went_wrong
                 });
                 console.log(err)
             } else {
-                // TODO: check whether it is in select item step or not.
 
                 await ioredis.del("chat_id" + chat_id);
 
                 const cachedData = JSON.parse(reply)
+                if (cachedData.nextStep != retailSteps.itemSelect) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs.invalid_call
+                    });
+                    return;
+                }
+
                 cachedData['nextStep'] = retailSteps.itemName;
                 redis.set(chat_id, JSON.stringify(cachedData));
 
@@ -727,14 +806,19 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went Wrong"
+                    text: retailMsgs.something_went_wrong
                 });
                 console.log(err)
             } else {
-                // TODO: check the next step.
-                // If its item select then only allow.
-
                 const cachedData = JSON.parse(reply)
+                if (cachedData.nextStep != retailSteps.itemSelect) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs.invalid_call
+                    });
+                    return;
+                }
+
                 cachedData['nextStep'] = retailSteps.itemCountStep(itemUniqueId);
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
@@ -754,13 +838,18 @@ const checkoutCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went Wrong"
+                    text: retailMsgs.something_went_wrong
                 });
                 console.log(err)
             } else {
-                // TODO: check the next step.
-                // if it is select item, then only allow.
                 const cachedData = JSON.parse(reply)
+                if (cachedData.nextStep != retailSteps.itemSelect) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs.invalid_call
+                    });
+                    return;
+                }
 
                 const savedData = await db.getDB().collection('ongoing').findOne({
                     transaction_id: transactionId
@@ -769,7 +858,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
                 if (!cachedData.selectedItems) {
                     replySender({
                         chat_id: chat_id,
-                        text: "Invalid Call..."
+                        text: retailMsgs.invalid_call
                     });
                     return;
                 }
@@ -838,18 +927,24 @@ const cancelCheckoutCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went Wrong"
+                    text: retailMsgs.something_went_wrong
                 });
                 console.log(err)
             } else {
-                // TODO: check the next step.
-                // if it is proceed checkout, then only allow.
                 const cachedData = JSON.parse(reply)
+                if (cachedData.nextStep != retailSteps.proceedCheckout) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs.invalid_call
+                    });
+                    return;
+                }
+
                 cachedData['nextStep'] = retailSteps.itemSelect;
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
-                    text: "You can still add more items to your cart."
+                    text: retailMsgs.still_can_add_items
                 });
             }
         });
@@ -864,13 +959,18 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: "Something went Wrong"
+                text: retailMsgs.something_went_wrong
             });
             console.log(err)
         } else {
-            // TODO: check the next step.
-            // if it is proceed checkout, then only allow.
             const cachedData = JSON.parse(reply)
+            if (cachedData.nextStep != retailSteps.proceedCheckout) {
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs.invalid_call
+                });
+                return;
+            }
 
             const savedData = await db.getDB().collection('ongoing').findOne({
                 transaction_id: transactionId
@@ -879,13 +979,13 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
             if (!cachedData.selectedItems) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Invalid Call..."
+                    text: retailMsgs.invalid_call
                 });
                 return;
             }
 
 
-            //TODO: Divide them according to the provider and bpp_id the object 
+            // Dividing them according to the provider and bpp_id the object 
             const messageId = savedData.message_id;
             const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
             const itemsForAPICall = [];
@@ -948,7 +1048,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                 console.log(error);
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went wrong."
+                    text: retailMsgs.something_went_wrong
                 })
             }
         }
@@ -956,43 +1056,51 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
 }
 
 const cancelConfirmCallback = async (chat_id, transaction_id) => {
-    // TODO: check the state for state Order Confirmation
 
     redis.get(chat_id, async (err, reply) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: "Something went Wrong"
+                text: retailMsgs.something_went_wrong
             });
             console.log(err)
         } else {
-            // TODO: check the next step.
-            // if it is proceed checkout, then only allow.
             const cachedData = JSON.parse(reply)
+            if (cachedData.nextStep != retailSteps.stateOrderConfirmation) {
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs.invalid_call
+                });
+                return;
+            }
 
             cachedData['nextStep'] = retailSteps.itemSelect;
             redis.set(chat_id, JSON.stringify(cachedData));
             replySender({
                 chat_id: chat_id,
-                text: "Your items are still saved in the cart.\nYou can add more items and place an order."
+                text: retailMsgs.still_can_add_items
             });
         }
     });
 }
 const confirmOrderCallback = async (chat_id, transactionId) => {
-    // TODO: check the state for state Order Confirmation
 
     redis.get(chat_id, async (err, reply) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: "Something went Wrong"
+                text: retailMsgs.something_went_wrong
             });
             console.log(err)
         } else {
-            // TODO: check the next step.
-            // if it is proceed checkout, then only allow.
             const cachedData = JSON.parse(reply)
+            if (cachedData.nextStep != retailSteps.stateOrderConfirmation) {
+                replySender({
+                    chat_id: chat_id,
+                    text: retailMsgs.invalid_call
+                });
+                return;
+            }
 
             const savedData = await db.getDB().collection('ongoing').findOne({
                 transaction_id: transactionId
@@ -1001,7 +1109,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             if (!cachedData.selectedItems) {
                 replySender({
                     chat_id: chat_id,
-                    text: "Invalid Call..."
+                    text: retailMsgs.invalid_call
                 });
                 return;
             }
@@ -1041,7 +1149,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
                 console.log(error)
                 replySender({
                     chat_id: chat_id,
-                    text: "Something went wrong."
+                    text: retailMsgs.something_went_wrong
                 });
             }
         }
@@ -1078,9 +1186,9 @@ const trackOrderCallback = async (chat_id, shortOrderId) => {
             `${process.env.becknService}/trigger/track`,
             reqBody
         );
-        
+
         // Update the transaction id that you will get from API call.
-        const transactionId=response.data.context.transaction_id;
+        const transactionId = response.data.context.transaction_id;
         await db.getDB().collection('confirmed_orders').updateOne({
             _id: savedData._id
         }, {
@@ -1123,7 +1231,7 @@ const orderStatusCallback = async (chat_id, shortOrderId) => {
         );
 
         // Update the transaction id that you will get from API call.
-        const transactionId=response.data.context.transaction_id;
+        const transactionId = response.data.context.transaction_id;
         await db.getDB().collection('confirmed_orders').updateOne({
             _id: savedData._id
         }, {
@@ -1220,8 +1328,6 @@ const selectAddToCartAPI = async ({
             "message_id": messageId,
             "bpp_id": bppId,
             "bpp_uri": bppUri,
-            //TODO: Try removing it.
-            "timestamp": (new Date()).toISOString()
         },
         "message": {
             "order": {
@@ -1278,7 +1384,7 @@ const createInitAPIInfo = async (cachedData) => {
     if (!savedData) {
         replySender({
             chat_id: chat_id,
-            text: "Invalid Call..."
+            text: retailMsgs.invalid_call
         });
         return;
     }
@@ -1322,8 +1428,6 @@ const initOrderAPI = async ({
             "message_id": messageId,
             "bpp_id": bppId,
             "bpp_uri": bppUri,
-            //TODO: Try removing it.
-            "timestamp": (new Date()).toISOString()
         },
         "message": {
             "order": {
@@ -1383,8 +1487,6 @@ const confirmOrderAPI = async ({
             "message_id": messageId,
             "bpp_id": bppId,
             "bpp_uri": bppUri,
-            //TODO: Try removing it.
-            "timestamp": (new Date()).toISOString()
         },
         "message": {
             "order": {
@@ -1519,8 +1621,6 @@ const retailSteps = {
     shipping_address_country: "shipping_address_country",
     shipping_address_area_code: "shipping_address_area_code",
 
-    shipping_location: "shipping_location",
-
     waitForInitCallback: 'waitForInitCallback',
 
     stateOrderConfirmation: 'stateOrderConfirmation',
@@ -1543,44 +1643,44 @@ const retailCallBackTypes = {
 
 // These are the text messages for each step.
 // Like when asking for location use location msg.
-const retailMsgs = {
-    location: "Hi! Where do you want to get your items delivered to today?",
-    itemName: "Thanks! What would you like to buy?",
-    itemSelect: "Here’s what I found near you: ",
-    itemCountStep: "Please enter the quantity.",
-    proceedCheckout: "Please hang on while we preceeding with your order.",
+// const retailMsgs = {
+//     location: "Hi! Where do you want to get your items delivered to today?",
+//     itemName: "Thanks! What would you like to buy?",
+//     itemSelect: "Here’s what I found near you: ",
+//     itemCountStep: "Please enter the quantity.",
+//     proceedCheckout: "Please hang on while we preceeding with your order.",
 
-    billing_name: "Please Enter your billing name.",
-    billing_phone: "Please Enter your billing contact number.",
+//     billing_name: "Please Enter your billing name.",
+//     billing_phone: "Please Enter your billing contact number.",
 
-    billing_address_flat_no: "Please enter your  Flat number.",
-    billing_address_building: "Please enter your Building Name.",
-    billing_address_street: "Please enter your Street Name.",
-    billing_address_city: "Please enter your City.",
-    billing_address_state: "Please enter your State.",
-    billing_address_country: "Please enter your Country.",
-    billing_address_area_code: "Please enter your Area Code or Pin Code.",
+//     billing_address_flat_no: "Please enter your  Flat number.",
+//     billing_address_building: "Please enter your Building Name.",
+//     billing_address_street: "Please enter your Street Name.",
+//     billing_address_city: "Please enter your City.",
+//     billing_address_state: "Please enter your State.",
+//     billing_address_country: "Please enter your Country.",
+//     billing_address_area_code: "Please enter your Area Code or Pin Code.",
 
-    billing_email: "Please enter your billing email.",
+//     billing_email: "Please enter your billing email.",
 
-    shipping_same_as_billing_info: "Is Your billing details same as shipping details.\nEnter *y* for yes.\nEnter *n* for no.",
+//     shipping_same_as_billing_info: "Is Your billing details same as shipping details.\nEnter *y* for yes.\nEnter *n* for no.",
 
-    shipping_email: "Please enter your shipping email.",
-    shipping_phone: "Please Enter your shipping contact number.",
+//     shipping_email: "Please enter your shipping email.",
+//     shipping_phone: "Please Enter your shipping contact number.",
 
-    shipping_address_flat_no: "Please enter your Flat number.",
-    shipping_address_building: "Please enter your Building Name.",
-    shipping_address_street: "Please enter your Street Name.",
-    shipping_address_city: "Please enter your City.",
-    shipping_address_state: "Please enter your State.",
-    shipping_address_country: "Please enter your Country.",
-    shipping_address_area_code: "Please enter your Area Code or Pin Code.",
+//     shipping_address_flat_no: "Please enter your Flat number.",
+//     shipping_address_building: "Please enter your Building Name.",
+//     shipping_address_street: "Please enter your Street Name.",
+//     shipping_address_city: "Please enter your City.",
+//     shipping_address_state: "Please enter your State.",
+//     shipping_address_country: "Please enter your Country.",
+//     shipping_address_area_code: "Please enter your Area Code or Pin Code.",
 
-    shipping_location: "Please share your shipping location.",
+//     waitForInitCallback: "We have initiated the your order.\nPlease wait for a moment.",
+//     waitForConfirmCallback: "We are creating your order.\nPlease wait for a moment."
+// }
 
-    waitForInitCallback: "We have initiated the your order.\nPlease wait for a moment.",
-    waitForConfirmCallback: "We are creating your order.\nPlease wait for a moment."
-}
+const retailMsgs = { ...englishOtherMsgs, ...englishStepsMsgs };
 
 module.exports = {
     handleRetail,
