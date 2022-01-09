@@ -371,7 +371,7 @@ const handleRetail = async (cachedData, data) => {
             break;
 
         case retailSteps.billing_address_area_code:
-            if (validationUtils.name(data.message.text)) {
+            if (validationUtils.integer(data.message.text)) {
                 const billingInfo = cachedData['billing'];
                 billingInfo['address']['area_code'] = data.message.text;
 
@@ -381,6 +381,12 @@ const handleRetail = async (cachedData, data) => {
                 replySender({
                     chat_id: data.message.chat.id,
                     text: retailMsgs(cachedData.language).billing_email,
+                });
+            }
+            else{
+                replySender({
+                    chat_id: data.message.chat.id,
+                    text: retailMsgs(cachedData.language).invalid_number,
                 });
             }
             break;
