@@ -77,7 +77,7 @@ const callBackController = async (req, res, next) => {
                         await ioredis.rpush("chat_id" + chat_id, JSON.stringify(itemData));
                     });
 
-                    if (toDisplayItems) {
+                    if ((toDisplayItems)&&(itemDetails.length)) {
                         // TODO: pass the language.
                         const cachedData=JSON.parse(await ioredis.get(chat_id));
                         retail.sendItemMessage(chat_id, transactionId, cachedData.language);
@@ -437,11 +437,12 @@ const callBackController = async (req, res, next) => {
                 break
             case 'on_status':
                 try {
+                    const orderId = data.message.order.id;
+                    console.log(JSON.stringify(data))
                     const savedData = await db.getDB().collection('confirmed_orders').findOne({
-                        transaction_id: data.context.transaction_id,
+                        order_id: orderId,
                     });
 
-                    const orderId = savedData.order_id;
                     const orderState = data.message.order.state;
                     const paymentInfo = data.message.order.payment;
 
@@ -463,7 +464,6 @@ const callBackController = async (req, res, next) => {
                     statusText += "\n*Payment*\n";
                     statusText += "Amount: *Rs. " + paymentInfo.params.amount + "*\n";
                     statusText += "Status: *" + paymentInfo.status + "*";
-
 
                     replySender({
                         chat_id: savedData.chat_id,

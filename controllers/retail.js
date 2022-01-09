@@ -1068,25 +1068,6 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
             // Dividing them according to the provider and bpp_id the object 
             const messageId = savedData.message_id;
             const selectedItemDetails = getSelectItemDetails(savedData.items, cachedData.selectedItems);
-            const itemsForAPICall = [];
-            let provderId;
-            let providerLocations;
-            let bppId, bppUri;
-            selectedItemDetails.forEach((itemData) => {
-                itemsForAPICall.push({
-                    "id": itemData.id,
-                    "quantity": {
-                        "count": itemData.count
-                    }
-                });
-                provderId = itemData.provider_id
-                providerLocations = {
-                    "id": itemData.location_id
-                }
-                bppId = itemData.bpp_id
-                bppUri = itemData.bpp_uri
-            });
-
 
             const itemsOnProviders = seperateItemsOnProvider(selectedItemDetails);
             await db.getDB().collection('ongoing').updateOne({
@@ -1100,6 +1081,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
             try {
                 Object.keys(itemsOnProviders).forEach(async (providerUniqueId) => {
                     const itemProvider = itemsOnProviders[providerUniqueId];
+                    console.log(itemProvider)
                     const addToCartResp = await selectAddToCartAPI({
                         ...itemProvider,
                         transactionId: transactionId,
@@ -1114,15 +1096,13 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                             "Error": "Api call failed."
                         }
                     }
-
-                    console.log(providerUniqueId);
                 });
 
                 cachedData['nextStep'] = retailSteps.waitForQouteCallback;
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs(cachedData.language).proceedCheckout
+                    text: retailMsgs(cachedData.language).waitForQouteCallback
                 });
             } catch (error) {
                 console.log(error);
@@ -1398,6 +1378,7 @@ const searchForItemsAPI = async (itemName, location, transactionId) => {
 const selectAddToCartAPI = async ({
     transactionId, messageId, providerId, providerLocations, items, bppUri, bppId
 }) => {
+    console.log("Provider ID : ", providerId)
     let reqBody = {
         "context": {
             "domain": retailDomain,
@@ -1437,7 +1418,7 @@ const selectAddToCartAPI = async ({
         }
     }
 
-    // console.log(reqBody)
+    // console.log(JSON.stringify(reqBody))
 
     try {
         const response = await axios.post(
@@ -1636,7 +1617,7 @@ const seperateItemsOnProvider = (selectedItemDetails) => {
         if (!itemsOnProviders[itemData.provider_unique_id]) {
             itemsOnProviders[itemData.provider_unique_id] = {
                 provider_unique_id: itemData.provider_unique_id,
-                provderId: itemData.provider_id,
+                providerId: itemData.provider_id,
                 providerLocations: {
                     'id': itemData.location_id
                 },

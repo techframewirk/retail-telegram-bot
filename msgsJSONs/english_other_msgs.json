@@ -1,6 +1,6 @@
 {
     "something_went_wrong": "Something went wrong!",
-    "items_added_to_cart": "Items added to the cart.\n If you would like to place the order, Click proceed. If not, Click Go Back", 
+    "items_added_to_cart": "Items added to the cart.\nIf you'd like to place the order, click checkout.", 
     
     "invalid_location": "That does not seem like a location! Please try again!",
     "invalid_item_name":"This does not look like an item name.",
