@@ -122,7 +122,7 @@ const callBackController = async (req, res, next) => {
                     if (err) {
                         replySender({
                             chat_id: chat_id,
-                            text: retail.msgs.something_went_wrong
+                            text: retail.msgs(retail.languages.english).something_went_wrong
                         });
                         console.log(err)
                     }
@@ -146,7 +146,7 @@ const callBackController = async (req, res, next) => {
                         });
                         qouteText += "\nTotal : *Rs. " + totalCost + "*\n";
                         qouteText += "\nPlease Enter billing details to proceed further.\n";
-                        qouteText += retail.msgs.billing_name;
+                        qouteText += retail.msgs(cachedData.language).billing_name;
 
                         replySender({
                             chat_id: chat_id,
@@ -201,7 +201,7 @@ const callBackController = async (req, res, next) => {
                     if (err) {
                         replySender({
                             chat_id: chat_id,
-                            text: retail.msgs.something_went_wrong
+                            text: retail.msgs(retail.languages.english).something_went_wrong
                         });
                         console.log(err)
                     }
@@ -324,7 +324,7 @@ const callBackController = async (req, res, next) => {
                         if (err) {
                             replySender({
                                 chat_id: chat_id,
-                                text: retail.msgs.something_went_wrong
+                                text: retail.msgs(retail.languages.english).something_went_wrong
                             });
                             console.log(err)
                         }

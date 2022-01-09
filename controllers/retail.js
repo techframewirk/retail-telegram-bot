@@ -7,8 +7,12 @@ const replySenderWithImage = require('./replySenderWithImage')
 const { ObjectId } = require('mongodb')
 const callbackUtils = require('../utils/callback')
 const validationUtils = require('../utils/validations')
+
 const englishOtherMsgs = require('../msgsJSONs/english_other_msgs.json')
 const englishStepsMsgs = require('../msgsJSONs/english_steps_msgs.json')
+
+const kannadaOtherMsgs = require('../msgsJSONs/kannada_other_msgs.json')
+const kannadaStepsMsgs = require('../msgsJSONs/kannada_steps_msgs.json')
 
 const handleRetail = async (cachedData, data) => {
     if (isStepAnItemCount(cachedData.nextStep)) {
@@ -18,7 +22,7 @@ const handleRetail = async (cachedData, data) => {
         if (!validationUtils.integer(data.message.text)) {
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_number,
+                text: retailMsgs(cachedData.language).invalid_number,
             })
             return
         }
@@ -62,7 +66,7 @@ const handleRetail = async (cachedData, data) => {
         redis.set(chat_id, JSON.stringify(cachedData));
         replySender({
             chat_id: chat_id,
-            text: retailMsgs.items_added_to_cart,
+            text: retailMsgs(cachedData.language).items_added_to_cart,
             reply_markup: reply_markup
         })
 
@@ -70,42 +74,42 @@ const handleRetail = async (cachedData, data) => {
     }
 
     switch (cachedData.nextStep) {
-        case retailSteps.language:{
-            const chat_id=data.message.chat.id;
-            if(validationUtils.integer(data.message.text)){
-                let languageNumber=parseInt(data.message.text);
-                if((languageNumber==1)||(languageNumber==2)){
-                    if(languageNumber==1){
-                        cachedData['language']=retailLanguages.english;
+        case retailSteps.language: {
+            const chat_id = data.message.chat.id;
+            if (validationUtils.integer(data.message.text)) {
+                let languageNumber = parseInt(data.message.text);
+                if ((languageNumber == 1) || (languageNumber == 2)) {
+                    if (languageNumber == 1) {
+                        cachedData['language'] = retailLanguages.english;
                     }
-                    else if(languageNumber==2){
-                        cachedData['language']=retailLanguages.kannada;
+                    else if (languageNumber == 2) {
+                        cachedData['language'] = retailLanguages.kannada;
                     }
 
                     cachedData['nextStep'] = retailSteps.location;
                     redis.set(data.message.chat.id, JSON.stringify(cachedData));
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.location
+                        text: retailMsgs(cachedData.language).location
                     });
 
                     console.log(cachedData)
                 }
-                else{
+                else {
                     replySender({
-                        chat_id:chat_id,
-                        text: retailMsgs.invalid_choice
+                        chat_id: chat_id,
+                        text: retailMsgs(retailLanguages.english).invalid_choice
                     });
                 }
             }
-            else{
+            else {
                 replySender({
-                    chat_id:chat_id,
-                    text: retailMsgs.invalid_number
+                    chat_id: chat_id,
+                    text: retailMsgs(retailLanguages.english).invalid_number
                 });
             }
         }
-        break;
+            break;
         case retailSteps.location:
             if (data.message.location) {
                 let updateCachedData = cachedData;
@@ -124,13 +128,13 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(updateCachedData));
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.itemName
+                    text: retailMsgs(cachedData.language).itemName
                 });
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_location
+                    text: retailMsgs(cachedData.language).invalid_location
                 });
             }
             break;
@@ -156,20 +160,20 @@ const handleRetail = async (cachedData, data) => {
 
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.itemSelect
+                        text: retailMsgs(cachedData.language).itemSelect
                     });
                 }
                 else {
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.something_went_wrong
+                        text: retailMsgs(cachedData.language).something_went_wrong
                     });
                 }
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_item_name
+                    text: retailMsgs(cachedData.language).invalid_item_name
                 });
             }
             break;
@@ -177,7 +181,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -185,7 +189,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -193,7 +197,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -202,7 +206,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -211,7 +215,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -220,7 +224,7 @@ const handleRetail = async (cachedData, data) => {
             const chat_id = data.message.chat.id;
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.invalid_call
+                text: retailMsgs(cachedData.language).invalid_call
             })
         }
             break;
@@ -234,7 +238,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_phone,
+                    text: retailMsgs(cachedData.language).billing_phone,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -250,7 +254,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_name
+                    text: retailMsgs(cachedData.language).invalid_name
                 });
             }
             break;
@@ -265,13 +269,13 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_flat_no,
+                    text: retailMsgs(cachedData.language).billing_address_flat_no,
                 });
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_contact_number,
+                    text: retailMsgs(cachedData.language).invalid_contact_number,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -301,7 +305,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_building,
+                    text: retailMsgs(cachedData.language).billing_address_building,
                 });
             }
             break;
@@ -316,7 +320,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_street,
+                    text: retailMsgs(cachedData.language).billing_address_street,
                 });
             }
             break;
@@ -331,7 +335,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_city,
+                    text: retailMsgs(cachedData.language).billing_address_city,
                 });
             }
             break;
@@ -346,7 +350,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_state,
+                    text: retailMsgs(cachedData.language).billing_address_state,
                 });
             }
             break;
@@ -361,7 +365,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_address_area_code,
+                    text: retailMsgs(cachedData.language).billing_address_area_code,
                 });
             }
             break;
@@ -376,7 +380,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.billing_email,
+                    text: retailMsgs(cachedData.language).billing_email,
                 });
             }
             break;
@@ -400,13 +404,13 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_same_as_billing_info,
+                    text: retailMsgs(cachedData.language).shipping_same_as_billing_info,
                 });
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_email
+                    text: retailMsgs(cachedData.language).invalid_email
                 })
             }
         }
@@ -447,7 +451,7 @@ const handleRetail = async (cachedData, data) => {
                     redis.set(data.message.chat.id, JSON.stringify(cachedData))
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.waitForInitCallback,
+                        text: retailMsgs(cachedData.language).waitForInitCallback,
                     });
                 }
                 else if ((data.message.text.trim().toLowerCase() == 'n') || (data.message.text.trim().toLowerCase() == "n")) {
@@ -470,20 +474,20 @@ const handleRetail = async (cachedData, data) => {
                     redis.set(data.message.chat.id, JSON.stringify(cachedData))
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.shipping_email,
+                        text: retailMsgs(cachedData.language).shipping_email,
                     });
                 }
                 else {
                     replySender({
                         chat_id: data.message.chat.id,
-                        text: retailMsgs.invalid_choice,
+                        text: retailMsgs(cachedData.language).invalid_choice,
                     })
                 }
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_choice,
+                    text: retailMsgs(cachedData.language).invalid_choice,
                 })
             }
             break;
@@ -506,7 +510,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_phone,
+                    text: retailMsgs(cachedData.language).shipping_phone,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -522,7 +526,7 @@ const handleRetail = async (cachedData, data) => {
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_email
+                    text: retailMsgs(cachedData.language).invalid_email
                 });
             }
         }
@@ -539,13 +543,13 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_flat_no,
+                    text: retailMsgs(cachedData.language).shipping_address_flat_no,
                 });
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_contact_number,
+                    text: retailMsgs(cachedData.language).invalid_contact_number,
                     reply_markup: {
                         keyboard: [
                             [{
@@ -570,7 +574,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_building,
+                    text: retailMsgs(cachedData.language).shipping_address_building,
                 });
             }
             break;
@@ -585,7 +589,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_street,
+                    text: retailMsgs(cachedData.language).shipping_address_street,
                 });
             }
             break;
@@ -600,7 +604,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_city,
+                    text: retailMsgs(cachedData.language).shipping_address_city,
                 });
             }
             break;
@@ -615,7 +619,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_state,
+                    text: retailMsgs(cachedData.language).shipping_address_state,
                 });
             }
             break;
@@ -630,7 +634,7 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.shipping_address_area_code,
+                    text: retailMsgs(cachedData.language).shipping_address_area_code,
                 });
             }
             break;
@@ -655,13 +659,13 @@ const handleRetail = async (cachedData, data) => {
                 redis.set(data.message.chat.id, JSON.stringify(cachedData))
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.waitForInitCallback,
+                    text: retailMsgs(cachedData.language).waitForInitCallback,
                 });
             }
             else {
                 replySender({
                     chat_id: data.message.chat.id,
-                    text: retailMsgs.invalid_number,
+                    text: retailMsgs(cachedData.language).invalid_number,
                 });
             }
             break;
@@ -674,25 +678,37 @@ const nextItemsCallback = async (chat_id, transactionId) => {
             await sendItemMessage(chat_id, transactionId)
         }
         else {
-            replySender({
-                chat_id: chat_id,
-                text: retailMsgs.no_matching_items_available,
-                reply_markup: JSON.stringify({
-                    inline_keyboard: [
-                        [
-                            {
-                                text: "Search",
-                                callback_data: callbackUtils.encrypt({
-                                    type: 'retail',
-                                    commandType: retailCallBackTypes.anotherSearch,
-                                    id: transactionId
-                                })
-                            }
-                        ]
-                    ],
-                    "resize_keyboard": true,
-                    "one_time_keyboard": true
-                })
+            // TODO: get cache data.
+            redis.get(chat_id, async (err, reply) => {
+                if (err) {
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs(retailLanguages.english).something_went_wrong
+                    });
+                    console.log(err)
+                } else {
+                    const cachedData=JSON.parse(reply)
+                    replySender({
+                        chat_id: chat_id,
+                        text: retailMsgs(cachedData.language)(cachedData.language).no_matching_items_available,
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [
+                                    {
+                                        text: "Search",
+                                        callback_data: callbackUtils.encrypt({
+                                            type: 'retail',
+                                            commandType: retailCallBackTypes.anotherSearch,
+                                            id: transactionId
+                                        })
+                                    }
+                                ]
+                            ],
+                            "resize_keyboard": true,
+                            "one_time_keyboard": true
+                        })
+                    });
+                }
             });
         }
     } catch (error) {
@@ -787,11 +803,25 @@ const sendItemMessage = async (chat_id, transactionId) => {
     // });
 
     await sleep(250 * displayItemCount)
-    replySender({
-        chat_id: chat_id,
-        text: retailMsgs.to_view_more_items,
-        reply_markup: JSON.stringify(reply_markup)
+
+    redis.get(chat_id, async (err, reply) => {
+        if (err) {
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs(retailLanguages.english).something_went_wrong
+            });
+            console.log(err)
+        } else {
+
+            const cachedData = JSON.parse(reply)
+            replySender({
+                chat_id: chat_id,
+                text: retailMsgs(cachedData.language).to_view_more_items,
+                reply_markup: JSON.stringify(reply_markup)
+            });
+        }
     });
+
 }
 
 function sleep(ms) {
@@ -806,7 +836,7 @@ const anotherSearchCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(retailLanguages.english).something_went_wrong
                 });
                 console.log(err)
             } else {
@@ -817,7 +847,7 @@ const anotherSearchCallback = async (chat_id, transactionId) => {
                 if (cachedData.nextStep != retailSteps.itemSelect) {
                     replySender({
                         chat_id: chat_id,
-                        text: retailMsgs.invalid_call
+                        text: retailMsgs(cachedData.language).invalid_call
                     });
                     return;
                 }
@@ -827,7 +857,7 @@ const anotherSearchCallback = async (chat_id, transactionId) => {
 
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.itemName
+                    text: retailMsgs(cachedData.language).itemName
                 });
             }
         });
@@ -842,7 +872,7 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(retailLanguages.english).something_went_wrong
                 });
                 console.log(err)
             } else {
@@ -850,7 +880,7 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
                 if (cachedData.nextStep != retailSteps.itemSelect) {
                     replySender({
                         chat_id: chat_id,
-                        text: retailMsgs.invalid_call
+                        text: retailMsgs(cachedData.language).invalid_call
                     });
                     return;
                 }
@@ -859,7 +889,7 @@ const addToCartCallback = async (chat_id, itemUniqueId) => {
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.itemCountStep
+                    text: retailMsgs(cachedData.language).itemCountStep
                 });
             }
         });
@@ -874,7 +904,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(retailLanguages.english).something_went_wrong
                 });
                 console.log(err)
             } else {
@@ -882,7 +912,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
                 if (cachedData.nextStep != retailSteps.itemSelect) {
                     replySender({
                         chat_id: chat_id,
-                        text: retailMsgs.invalid_call
+                        text: retailMsgs(cachedData.language).invalid_call
                     });
                     return;
                 }
@@ -894,7 +924,7 @@ const checkoutCallback = async (chat_id, transactionId) => {
                 if (!cachedData.selectedItems) {
                     replySender({
                         chat_id: chat_id,
-                        text: retailMsgs.invalid_call
+                        text: retailMsgs(cachedData.language).invalid_call
                     });
                     return;
                 }
@@ -963,7 +993,7 @@ const cancelCheckoutCallback = async (chat_id, transactionId) => {
             if (err) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(retailLanguages.english).something_went_wrong
                 });
                 console.log(err)
             } else {
@@ -971,7 +1001,7 @@ const cancelCheckoutCallback = async (chat_id, transactionId) => {
                 if (cachedData.nextStep != retailSteps.proceedCheckout) {
                     replySender({
                         chat_id: chat_id,
-                        text: retailMsgs.invalid_call
+                        text: retailMsgs(cachedData.language).invalid_call
                     });
                     return;
                 }
@@ -980,7 +1010,7 @@ const cancelCheckoutCallback = async (chat_id, transactionId) => {
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.still_can_add_items
+                    text: retailMsgs(cachedData.language).still_can_add_items
                 });
             }
         });
@@ -995,7 +1025,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.something_went_wrong
+                text: retailMsgs(retailLanguages.english).something_went_wrong
             });
             console.log(err)
         } else {
@@ -1003,7 +1033,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
             if (cachedData.nextStep != retailSteps.proceedCheckout) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.invalid_call
+                    text: retailMsgs(cachedData.language).invalid_call
                 });
                 return;
             }
@@ -1015,7 +1045,7 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
             if (!cachedData.selectedItems) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.invalid_call
+                    text: retailMsgs(cachedData.language).invalid_call
                 });
                 return;
             }
@@ -1078,13 +1108,13 @@ const proceedCheckoutCallback = async (chat_id, transactionId) => {
                 redis.set(chat_id, JSON.stringify(cachedData));
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.proceedCheckout
+                    text: retailMsgs(cachedData.language).proceedCheckout
                 });
             } catch (error) {
                 console.log(error);
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(cachedData.language).something_went_wrong
                 })
             }
         }
@@ -1097,7 +1127,7 @@ const cancelConfirmCallback = async (chat_id, transaction_id) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.something_went_wrong
+                text: retailMsgs(retailLanguages.english).something_went_wrong
             });
             console.log(err)
         } else {
@@ -1105,7 +1135,7 @@ const cancelConfirmCallback = async (chat_id, transaction_id) => {
             if (cachedData.nextStep != retailSteps.stateOrderConfirmation) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.invalid_call
+                    text: retailMsgs(cachedData.language).invalid_call
                 });
                 return;
             }
@@ -1114,7 +1144,7 @@ const cancelConfirmCallback = async (chat_id, transaction_id) => {
             redis.set(chat_id, JSON.stringify(cachedData));
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.still_can_add_items
+                text: retailMsgs(cachedData.language).still_can_add_items
             });
         }
     });
@@ -1125,7 +1155,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
         if (err) {
             replySender({
                 chat_id: chat_id,
-                text: retailMsgs.something_went_wrong
+                text: retailMsgs(retailLanguages.english).something_went_wrong
             });
             console.log(err)
         } else {
@@ -1133,7 +1163,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             if (cachedData.nextStep != retailSteps.stateOrderConfirmation) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.invalid_call
+                    text: retailMsgs(cachedData.language).invalid_call
                 });
                 return;
             }
@@ -1145,7 +1175,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
             if (!cachedData.selectedItems) {
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.invalid_call
+                    text: retailMsgs(cachedData.language).invalid_call
                 });
                 return;
             }
@@ -1175,7 +1205,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
 
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.waitForConfirmCallback
+                    text: retailMsgs(cachedData.language).waitForConfirmCallback
                 });
 
                 cachedData['nextStep'] = retailSteps.waitForConfirmCallback;
@@ -1185,7 +1215,7 @@ const confirmOrderCallback = async (chat_id, transactionId) => {
                 console.log(error)
                 replySender({
                     chat_id: chat_id,
-                    text: retailMsgs.something_went_wrong
+                    text: retailMsgs(cachedData.language).something_went_wrong
                 });
             }
         }
@@ -1418,11 +1448,7 @@ const createInitAPIInfo = async (cachedData) => {
     });
 
     if (!savedData) {
-        replySender({
-            chat_id: chat_id,
-            text: retailMsgs.invalid_call
-        });
-        return;
+        return {};
     }
 
     const messageId = cachedData.message_id;
@@ -1717,18 +1743,25 @@ const retailCallBackTypes = {
 //     waitForConfirmCallback: "We are creating your order.\nPlease wait for a moment."
 // }
 
-const retailMsgs = { ...englishOtherMsgs, ...englishStepsMsgs };
+const retailMsgs = (language) => {
+    if (language == retailLanguages.kannada) {
+        return { ...kannadaOtherMsgs, ...kannadaStepsMsgs }
+    }
+    else {
+        return { ...englishOtherMsgs, ...englishStepsMsgs }
+    }
+};
 
-const retailLanguages={
-    "english":"english",
-    "kannada":"kannada"
+const retailLanguages = {
+    "english": "english",
+    "kannada": "kannada"
 }
 
 module.exports = {
     handleRetail,
     steps: retailSteps,
     msgs: retailMsgs,
-    languages:retailLanguages,
+    languages: retailLanguages,
     callbackTypes: retailCallBackTypes,
     getRetailItemText,
     getSelectItemDetails,

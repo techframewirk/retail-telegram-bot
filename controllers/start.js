@@ -60,7 +60,7 @@ const webhookController = async (req, res, next) => {
                             } else {
                                 replySender({
                                     "chat_id": data.message.chat.id,
-                                    "text": retail.msgs.language
+                                    "text": retail.msgs(retail.languages.english).language
                                 });
                             }
                         })
@@ -85,7 +85,7 @@ const webhookController = async (req, res, next) => {
                         } else {
                             replySender({
                                 "chat_id": data.message.chat.id,
-                                text: retail.msgs.did_nt_understand
+                                text: retail.msgs(retail.languages.english).did_nt_understand
                             })
                         }
                     }
