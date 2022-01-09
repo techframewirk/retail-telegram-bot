@@ -15,6 +15,11 @@ The following env variables need to be defined
 
 - Docker
 - Docker Compose
+- Running instance of bap adaptor
+    ```
+    https://github.com/techframewirk/bap-adaptor
+
+    ```
 
 ##### Steps to Run the server
 
